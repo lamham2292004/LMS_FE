@@ -12,8 +12,8 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
-import useDictionary from '@/locales/dictionary-hook'
-import useComputedStyle from '@/hooks/use-computed-style'
+import useDictionary from '@lms/locales/dictionary-hook'
+import useComputedStyle from '@lms/hooks/use-computed-style'
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Filler)
 

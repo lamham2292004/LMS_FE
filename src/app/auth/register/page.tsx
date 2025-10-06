@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./register.module.css";
 import Link from "next/link";
-import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa";
+import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa6";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");

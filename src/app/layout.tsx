@@ -1,24 +1,17 @@
-import { ThemeProvider } from "next-themes";
-import "./globals.css";
-import type { Metadata } from "next";
+"use client";
 import { AuthProvider } from "@/features/auth";
+import { ThemeProvider } from "@lms/components/theme-provider";
+import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "HPC Project - Hệ Thống Quản Lý Giáo Dục",
-  description: "Hệ thống quản lý giáo dục với Next.js và Laravel",
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
   return (
     <html lang="vi" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>{children}</AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

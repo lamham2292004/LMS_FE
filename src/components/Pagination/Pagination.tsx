@@ -1,8 +1,8 @@
 import React from 'react'
-import { ResourceCollection } from '@/models/resource'
-import Paginate from '@/components/Pagination/Paginate'
-import RowsPerPage from '@/components/Pagination/RowsPerPage'
-import Summary from '@/components/Pagination/Summary'
+import { ResourceCollection } from '@lms/models/resource'
+import Paginate from '@lms/components/Pagination/Paginate'
+import RowsPerPage from '@lms/components/Pagination/RowsPerPage'
+import Summary from '@lms/components/Pagination/Summary'
 
 type Props = {
   meta: ResourceCollection<unknown>['meta'];

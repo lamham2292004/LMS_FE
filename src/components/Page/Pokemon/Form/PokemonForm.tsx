@@ -1,10 +1,10 @@
-import Form from '@/components/Page/Pokemon/Form/Form'
-import { Pokemon } from '@/models/pokemon'
-import { Resource } from '@/models/resource'
-import { Type } from '@/models/type'
-import { getLocale } from '@/locales/dictionary'
-import serverFetch from '@/utils/server-fetch'
-import { EggGroup } from '@/models/egg-group'
+import Form from '@lms/components/Page/Pokemon/Form/Form'
+import { Pokemon } from '@lms/models/pokemon'
+import { Resource } from '@lms/models/resource'
+import { Type } from '@lms/models/type'
+import { getLocale } from '@lms/locales/dictionary'
+import serverFetch from '@lms/utils/server-fetch'
+import { EggGroup } from '@lms/models/egg-group'
 
 type Props = {
   pokemon?: Pokemon;

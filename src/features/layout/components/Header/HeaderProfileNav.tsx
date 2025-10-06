@@ -31,7 +31,7 @@ import Link from "next/link";
 import HeaderLogout from "./HeaderLogout";
 import { authOptions } from "@/app/api/auth/option";
 import { getServerSession } from "next-auth";
-// import { getDictionary } from '@/locales/dictionary'
+// import { getDictionary } from '@lms/locales/dictionary'
 
 type ItemWithIconProps = {
   icon: IconDefinition;

@@ -1,5 +1,5 @@
 import React from 'react'
-import useDictionary from '@/locales/dictionary-hook'
+import useDictionary from '@lms/locales/dictionary-hook'
 
 type Props = {
   total: number;

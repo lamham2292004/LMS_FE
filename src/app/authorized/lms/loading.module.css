@@ -1,0 +1,33 @@
+/* File: src/app/authorized/lms/loading.module.css */
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Chiếm toàn bộ chiều cao màn hình */
+  width: 100%;
+  background-color: #ffffff; /* Hoặc màu nền bạn muốn */
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #007bff; /* Màu của vòng xoay */
+
+  animation: spin 1s ease infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -3,7 +3,7 @@
 import React from "react";
 import styles from "./login.module.css";
 import Link from "next/link";
-import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa";
+import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa6";
 import { LoginForm } from "@/features/auth";
 
 export default function LoginPage() {

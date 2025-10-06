@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { Type, TypeIdentifier } from '@/models/type'
+import { Type, TypeIdentifier } from '@lms/models/type'
 
 const typeColorMap = new Map<TypeIdentifier, string>([
   [TypeIdentifier.Normal, '#aa9'],

@@ -1,5 +1,5 @@
-import RowPerPageSelect from '@/components/Pagination/RowsPerPageSelect'
-import useDictionary from '@/locales/dictionary-hook'
+import RowPerPageSelect from '@lms/components/Pagination/RowsPerPageSelect'
+import useDictionary from '@lms/locales/dictionary-hook'
 
 type Props = {
   perPage: number;

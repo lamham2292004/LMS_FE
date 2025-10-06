@@ -1,44 +1,39 @@
-// Đây là file điều hướng module khi làm mô hình microsevice
+// File: src/features/layout/components/Sidebar/moduleList.ts
+
+// ==========================================================
+// ===                    SỬA LỖI Ở ĐÂY                     ===
+// ==========================================================
+// 1. Tách câu lệnh import thành hai dòng riêng biệt cho hai thư viện
 import {
-  LayoutDashboard,
-  FileText,
-  Calendar,
-  Bell,
-  CheckSquare,
-  Users,
-  BookOpen,
-  MessageSquare,
-  Shield,
-  Settings,
-  HelpCircle,
-  LogOut,
-} from "lucide-react";
+  faHouse,
+  faFile,
+  faGraduationCap,
+} from '@fortawesome/free-solid-svg-icons';
 
-// Kiểu dữ liệu của module
-export interface ModuleConfig {
-  id: string; // unique id
-  label: string; // tên hiển thị
-  icon: React.ReactNode;
-  type?: "iframe" | "react" | "angular" | "vue"; // loại module
-  moduleUrl: string; // URL hoặc đường dẫn module
-  group?: "top" | "bottom"; // vị trí sidebar
-}
+// 2. Import kiểu dữ liệu IModule (nếu cần)
+import { IModule } from '@lms/features/layout/types';
 
-export const modules: ModuleConfig[] = [
-  //   // Dashboard + tasks
-  //   { id: "dashboard", label: "Analytics", icon: <LayoutDashboard size={18} />, type: "iframe", moduleUrl: "https://dashboard.company.com", group: "top" },
-  //   { id: "documents", label: "Documents", icon: <FileText size={18} />, type: "iframe", moduleUrl: "https://documents.company.com", group: "top" },
-  //   { id: "calendar", label: "Calendar", icon: <Calendar size={18} />, type: "iframe", moduleUrl: "https://calendar.company.com", group: "top" },
-  //   { id: "notifications", label: "Notifications", icon: <Bell size={18} />, type: "iframe", moduleUrl: "https://notifications.company.com", group: "top" },
-  //   { id: "tasks", label: "Tasks", icon: <CheckSquare size={18} />, type: "iframe", moduleUrl: "https://tasks.company.com", group: "top" },
-  //   // Relationships
-  //   { id: "departments", label: "Departments", icon: <Users size={18} />, type: "iframe", moduleUrl: "https://departments.company.com", group: "top" },
-  //   { id: "blog", label: "Blog", icon: <BookOpen size={18} />, type: "iframe", moduleUrl: "https://blog.company.com", group: "top" },
-  //   { id: "chats", label: "Chats", icon: <MessageSquare size={18} />, type: "iframe", moduleUrl: "https://chats.company.com", group: "top" },
-  //   // Configuration
-  //   { id: "admin", label: "Admin", icon: <Shield size={18} />, type: "iframe", moduleUrl: "https://admin.company.com", group: "top" },
-  //   { id: "settings", label: "Settings", icon: <Settings size={18} />, type: "iframe", moduleUrl: "https://settings.company.com", group: "top" },
-  //   // Bottom menu
-  //   { id: "support", label: "Support", icon: <HelpCircle size={18} />, type: "iframe", moduleUrl: "https://support.company.com", group: "bottom" },
-  //   { id: "logout", label: "Logout", icon: <LogOut size={18} />, type: "link", moduleUrl: "/logout", group: "bottom" },
+/**
+ * Đây là danh sách các mục sẽ hiển thị trên thanh menu chính của FE_LMS.
+ * Sidebar của hệ thống sẽ đọc từ biến này để render ra giao diện.
+ */
+export const moduleList: IModule[] = [
+  {
+    name: 'Dashboard',
+    icon: faHouse, // Icon cũ của hệ thống
+    path: '/authorized/dashboard',
+  },
+  {
+    name: 'Học trực tuyến',
+    icon: faGraduationCap, // Icon mới cho module LMS
+    path: '/authorized/lms', // Trỏ đến trang điều hướng
+  },
+  {
+    name: 'Documents',
+    icon: faFile, // Icon cũ của hệ thống
+    path: '/authorized/dashboard/documents',
+  },
 ];
+
+// 3. Đã xóa phần interface ModuleConfig và biến modules không được sử dụng
+// để giữ cho code sạch sẽ và đúng với cấu trúc của project.

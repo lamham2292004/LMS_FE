@@ -1,7 +1,7 @@
 'use client'
 
 // Tạm thời comment out vì chưa có SidebarProvider
-// import { useSidebar } from '@/components/Layout/Dashboard/SidebarProvider'
+// import { useSidebar } from '@lms/components/Layout/Dashboard/SidebarProvider'
 import { Button } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBars } from '@fortawesome/free-solid-svg-icons'

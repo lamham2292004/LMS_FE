@@ -1,92 +1,58 @@
+// File: src/features/layout/components/Sidebar/Sidebar.tsx (NỘI DUNG MỚI)
+
 "use client";
 
-import {
-  LayoutDashboard,
-  FileText,
-  Calendar,
-  Bell,
-  CheckSquare,
-  Users,
-  BookOpen,
-  MessageSquare,
-  Shield,
-  Settings,
-  HelpCircle,
-  LogOut,
-} from "lucide-react";
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styles from "./Sidebar.module.css";
+import { moduleList } from "./moduleList";
+import { useAuth } from "@/features/auth";
+import { LogOut, HelpCircle } from "lucide-react"; // Import icon từ lucide-react
 
 interface SidebarProps {
   collapsed: boolean;
 }
 
 export default function Sidebar({ collapsed }: SidebarProps) {
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
+
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
-      {/* User section */}
       <div className={styles.userSection}>
-        <div className={styles.avatar}>U</div>
-        <span className={styles.username}>Username</span>
+        <div className={styles.avatar}>{user?.full_name?.charAt(0) || "U"}</div>
+        <span className={styles.username}>{user?.full_name || "Username"}</span>
       </div>
 
-      {/* Menu wrapper scrollable */}
       <div className={styles.menuWrapper}>
         <nav className={styles.menu}>
-          <p className={styles.menuGroup}>DASHBOARD</p>
-          <a className={styles.menuItem}>
-            <LayoutDashboard size={18} className={styles.icon} />
-            <span>Analytics</span>
-          </a>
-          <a className={styles.menuItem}>
-            <FileText size={18} className={styles.icon} />
-            <span>Documents</span>
-          </a>
-          <a className={styles.menuItem}>
-            <Calendar size={18} className={styles.icon} />
-            <span>Calendar</span>
-          </a>
-          <a className={styles.menuItem}>
-            <Bell size={18} className={styles.icon} />
-            <span>Notifications</span>
-          </a>
-          <a className={styles.menuItem}>
-            <CheckSquare size={18} className={styles.icon} />
-            <span>Tasks</span>
-          </a>
-
-          <p className={styles.menuGroup}>RELATIONSHIPS</p>
-          <a className={styles.menuItem}>
-            <Users size={18} className={styles.icon} />
-            <span>Departments</span>
-          </a>
-          <a className={styles.menuItem}>
-            <BookOpen size={18} className={styles.icon} />
-            <span>Blog</span>
-          </a>
-          <a className={styles.menuItem}>
-            <MessageSquare size={18} className={styles.icon} />
-            <span>Chats</span>
-          </a>
-
-          <p className={styles.menuGroup}>CONFIGURATION</p>
-          <a className={styles.menuItem}>
-            <Shield size={18} className={styles.icon} />
-            <span>Admin</span>
-          </a>
-          <a className={styles.menuItem}>
-            <Settings size={18} className={styles.icon} />
-            <span>Settings</span>
-          </a>
+          {moduleList.map((item) => (
+            <Link href={item.path} key={item.name} legacyBehavior>
+              <a
+                className={`${styles.menuItem} ${
+                  pathname === item.path ? "active" : ""
+                }`}
+              >
+                <FontAwesomeIcon
+                  icon={item.icon}
+                  size="lg"
+                  className={styles.icon}
+                />
+                <span>{item.name}</span>
+              </a>
+            </Link>
+          ))}
         </nav>
       </div>
 
-      {/* Bottom menu cố định đáy */}
       <div className={styles.bottomMenu}>
-        <a className={styles.menuItem}>
+        <a href="#" className={styles.menuItem}>
           <HelpCircle size={18} className={styles.icon} />
           <span>Support</span>
         </a>
-        <a className={`${styles.menuItem} ${styles.logout}`}>
+        <a onClick={() => logout()} className={`${styles.menuItem} ${styles.logout}`}>
           <LogOut size={18} className={styles.icon} />
           <span>Logout</span>
         </a>

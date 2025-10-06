@@ -16,8 +16,8 @@ import {
   faMoon,
   faSun,
 } from "@fortawesome/free-solid-svg-icons";
-// import { Theme } from '@/themes/enum'
-// import useDictionary from '@/locales/dictionary-hook'
+// import { Theme } from '@lms/themes/enum'
+// import useDictionary from '@lms/locales/dictionary-hook'
 import { useMediaQuery } from "react-responsive";
 
 const CurrentTheme = ({ theme }: { theme: string }) => (

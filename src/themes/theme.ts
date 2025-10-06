@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { cookies } from 'next/headers'
-import { Theme } from '@/themes/enum'
+import { Theme } from '@lms/themes/enum'
 
 export const getPreferredTheme = () => {
   const preferredThemeCookies = (cookies().get('preferred_theme')?.value ?? Theme.Auto) as Theme

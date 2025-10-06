@@ -1,5 +1,5 @@
 import { Breadcrumb as BSBreadcrumb, BreadcrumbItem } from 'react-bootstrap'
-// import { getDictionary } from '@/locales/dictionary'
+// import { getDictionary } from '@lms/locales/dictionary'
 
 export default async function Breadcrumb() {
   const dict = await getDictionary()
