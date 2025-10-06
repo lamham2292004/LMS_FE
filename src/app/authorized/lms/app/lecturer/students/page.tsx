@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@lms/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Input } from "@lms/components/ui/input"
+import { Badge } from "@lms/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
 import { Users, Search, Trophy, Clock, TrendingUp } from "lucide-react"
 
 export default function LecturerStudentsPage() {

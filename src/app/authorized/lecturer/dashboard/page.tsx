@@ -2,14 +2,13 @@
 
 import React from "react";
 import { ProtectedRoute } from "@/features/auth";
-import { DashboardHeader } from "@/features/dashboard";
 import styles from "../../dashboard/dashboard.module.css";
 
 export default function LecturerDashboardPage() {
   return (
     <ProtectedRoute requiredUserType="lecturer">
       <div className={styles.dashboard}>
-        <DashboardHeader />
+        
 
         <main className={styles.main}>
           <div className={styles.container}>

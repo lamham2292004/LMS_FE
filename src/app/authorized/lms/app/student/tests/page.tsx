@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Badge } from "@lms/components/ui/badge"
+import { Button } from "@lms/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
+import { Progress } from "@lms/components/ui/progress"
 import { Trophy, Clock, CheckCircle2, XCircle, Eye, Calendar } from "lucide-react"
 import Link from "next/link"
 

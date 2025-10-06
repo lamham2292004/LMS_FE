@@ -1,7 +1,12 @@
+/* Tải Tailwind trước */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Tải Bootstrap sau */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Các layer và biến CSS của Tailwind */
 @layer base {
   :root {
     --background: 0 0% 100%;

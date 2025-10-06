@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation"; // Thêm dòng import này
 import { Search, Bell, Sun, Moon, Monitor, Menu } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -11,6 +12,15 @@ interface NavbarProps {
 }
 
 export default function Navbar({ collapsed, setCollapsed }: NavbarProps) {
+  const pathname = usePathname(); // Lấy đường dẫn hiện tại
+
+  // === LOGIC MỚI NẰM Ở ĐÂY ===
+  // Nếu đường dẫn là của trang LMS, không hiển thị gì cả (return null)
+  if (pathname.startsWith("/authorized/lms/app")) {
+    return null;
+  }
+
+  // Nếu không phải trang LMS, hiển thị Navbar như bình thường
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 

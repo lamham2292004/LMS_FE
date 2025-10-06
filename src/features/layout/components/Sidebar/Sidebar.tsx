@@ -1,5 +1,3 @@
-// File: src/features/layout/components/Sidebar/Sidebar.tsx (NỘI DUNG MỚI)
-
 "use client";
 
 import React from "react";
@@ -9,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styles from "./Sidebar.module.css";
 import { moduleList } from "./moduleList";
 import { useAuth } from "@/features/auth";
-import { LogOut, HelpCircle } from "lucide-react"; // Import icon từ lucide-react
+import { LogOut, HelpCircle } from "lucide-react";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -29,10 +27,11 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       <div className={styles.menuWrapper}>
         <nav className={styles.menu}>
           {moduleList.map((item) => (
-            <Link href={item.path} key={item.name} legacyBehavior>
+            // SỬA LỖI: Đổi item.path thành item.href để khớp với dữ liệu
+            <Link href={item.href} key={item.name} legacyBehavior>
               <a
                 className={`${styles.menuItem} ${
-                  pathname === item.path ? "active" : ""
+                  pathname === item.href ? "active" : ""
                 }`}
               >
                 <FontAwesomeIcon

@@ -1,11 +1,17 @@
-// File: src/app/authorized/lms/components/header.tsx (NỘI DUNG MỚI)
-
 "use client"
 
-// Import icon và các component UI từ chính module LMS (dùng alias @lms)
-import { Bell, ShoppingCart, User, LogOut } from "lucide-react"
+import {
+  Bell,
+  Home, // Thêm icon Home
+  LogOut,
+  Search,
+  ShoppingCart,
+  User,
+} from "lucide-react"
+import Link from "next/link"
+import { useAuth } from "@/features/auth"
+import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
 import { Button } from "@lms/components/ui/button"
-import { Badge } from "@lms/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,82 +20,95 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@lms/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
 import { ThemeToggle } from "@lms/components/theme-toggle"
 
-// Import hook useAuth từ hệ thống FE_LMS gốc (dùng alias @)
-import { useAuth } from "@/features/auth";
-
-import Link from "next/link"
-
 interface HeaderProps {
-  title: string
+  title?: string
   showCart?: boolean
 }
 
 export function Header({ title, showCart = false }: HeaderProps) {
-  // Lấy thông tin user và hàm logout từ AuthContext
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth()
 
-  // Sử dụng hàm logout từ context
   const handleLogout = () => {
-    logout();
-    // Router sẽ tự động điều hướng về trang login do ProtectedRoute
+    logout()
   }
 
-  const userName = user?.full_name || "Người dùng";
-  const userEmail = user?.email || "email@example.com";
-  // Giả sử user có trường avatar, nếu không thì dùng ảnh placeholder
-  const userAvatar = user?.avatar || "";
+  const userName = user?.full_name || "Người dùng"
+  const userEmail = user?.email || "email@example.com"
+  const userAvatar = user?.avatar || ""
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-card px-6">
-      <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+    <header className="flex h-16 shrink-0 items-center border-b bg-background px-4 md:px-6">
+      {/* Breadcrumbs / Title */}
+      {title && <h1 className="text-lg font-semibold">{title}</h1>}
 
-      <div className="flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-2 md:gap-4">
+        {/* NÚT QUAY LẠI TRANG CHỦ MỚI */}
+        <Link href="/authorized/dashboard" passHref>
+          <Button variant="outline" size="sm">
+            <Home className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Trang chủ</span>
+          </Button>
+        </Link>
+
+        {/* Search form */}
+        <form className="relative hidden md:block">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input
+            type="search"
+            placeholder="Tìm kiếm..."
+            className="w-full rounded-lg bg-muted py-2 pl-8 pr-2 text-sm outline-none focus:ring-1 focus:ring-ring"
+          />
+        </form>
+
         <ThemeToggle />
 
-        {showCart && (
-          <Button variant="ghost" size="icon" className="relative" asChild>
-            <Link href="/cart">
-              <ShoppingCart className="h-5 w-5" />
-              <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">2</Badge>
-            </Link>
-          </Button>
-        )}
-
-        <Button variant="ghost" size="icon" className="relative">
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
-          <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-destructive p-0 text-xs">3</Badge>
+          <span className="sr-only">Thông báo</span>
         </Button>
 
+        {/* Cart */}
+        {showCart && (
+          <Link href="/authorized/lms/app/cart">
+            <Button variant="ghost" size="icon" className="relative rounded-full">
+              <ShoppingCart className="h-5 w-5" />
+              <span className="sr-only">Giỏ hàng</span>
+            </Button>
+          </Link>
+        )}
+
+        {/* User dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={userAvatar} alt={userName} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {userName.charAt(0).toUpperCase()}
-                </AvatarFallback>
+                <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col gap-1">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{userName}</p>
-                <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {userEmail}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/student/profile" className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Hồ sơ</span>
-              </Link>
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <span>Hồ sơ</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Đăng xuất</span>
             </DropdownMenuItem>

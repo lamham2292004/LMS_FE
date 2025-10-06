@@ -7,6 +7,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
   return (
     <html lang="vi" suppressHydrationWarning>
       <body>
+        {/* AuthProvider bao bọc toàn bộ ứng dụng */}
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             {children}
