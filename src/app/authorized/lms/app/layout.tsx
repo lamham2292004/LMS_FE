@@ -1,4 +1,4 @@
-// File: src/app/authorized/lms/app/layout.tsx
+// src/app/authorized/lms/app/layout.tsx (Code đã sửa)
 
 "use client";
 
@@ -7,10 +7,9 @@ import { useMemo } from 'react';
 import "../../../globals.css";
 
 // Import components từ chính module LMS bằng alias @lms
-import { Header } from '@lms/components/header';
+// Header không cần ở đây nữa
 import { Sidebar } from '@lms/components/sidebar';
 
-// Import AuthContext từ hệ thống FE_LMS gốc bằng alias @
 // Import AuthContext từ hệ thống FE_LMS gốc bằng alias @
 import { useAuth } from '@/features/auth';
 
@@ -22,7 +21,6 @@ export default function LMSLayout({ children }: LMSLayoutProps) {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  // Tự động xác định vai trò dựa trên URL để hiển thị sidebar chính xác
   const role = useMemo(() => {
     if (pathname.includes('/admin')) return 'admin';
     if (pathname.includes('/lecturer')) return 'lecturer';
@@ -31,15 +29,13 @@ export default function LMSLayout({ children }: LMSLayoutProps) {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      {/* Sidebar của FE_DEMO, nhận vai trò để hiển thị menu tương ứng */}
       <Sidebar role={role} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header của FE_DEMO */}
-        <Header />
+        {/* Dòng <Header /> đã được xóa bỏ */}
 
-        {/* Nội dung của các trang con (student, admin...) sẽ được hiển thị ở đây */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/40">
+        <main className="flex-1 overflow-y-auto bg-muted/40">
+          {/* Sửa lại padding ở đây để không bị mất khoảng đệm */}
           {children}
         </main>
       </div>

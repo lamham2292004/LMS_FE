@@ -1,13 +1,16 @@
+// src/app/authorized/layout.tsx (Code đã sửa)
+
 "use client";
 
 import { useState } from "react";
+// 1. Import thêm hook `usePathname`
 import { usePathname, redirect } from "next/navigation";
 import { Sidebar, Navbar } from "@/features/layout";
 import { useAuth } from "@/features/auth";
 
-// Component con này chứa toàn bộ logic và sẽ được render bên trong AuthProvider
 function AuthorizedLayoutClient({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  // 2. Lấy đường dẫn URL hiện tại
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
 
@@ -15,18 +18,21 @@ function AuthorizedLayoutClient({ children }: { children: React.ReactNode }) {
     return <div>Loading...</div>; // Hoặc một component loading spinner
   }
 
-  // Logic xác thực người dùng
   if (!user) {
     return redirect("/auth/login");
   }
 
-  // Logic ẩn layout chung khi vào LMS
+  // 3. Kiểm tra xem có phải là trang thuộc LMS hay không
+  // Nếu đường dẫn bắt đầu bằng '/authorized/lms/app', đây là trang của LMS
   const isLmsAppRoute = pathname.startsWith('/authorized/lms/app');
+
+  // 4. Nếu là trang của LMS, chỉ render nội dung trang (`children`)
+  // mà không bao gồm Sidebar và Navbar chung.
   if (isLmsAppRoute) {
     return <>{children}</>;
   }
 
-  // Hiển thị layout chung cho các trang còn lại
+  // 5. Nếu không phải trang LMS, hiển thị layout chung như bình thường
   return (
     <div className="flex min-h-screen">
       <Sidebar collapsed={collapsed} />
@@ -38,7 +44,6 @@ function AuthorizedLayoutClient({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Layout chính bây giờ chỉ có nhiệm vụ render component con ở trên
 export default function AuthorizedLayout({ children }: { children: React.ReactNode }) {
   return <AuthorizedLayoutClient>{children}</AuthorizedLayoutClient>;
 }
