@@ -1,7 +1,7 @@
-import { Header } from "@/components/header"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Header } from "@lms/components/header"
+import { Card, CardContent } from "@lms/components/ui/card"
+import { Button } from "@lms/components/ui/button"
+import { Badge } from "@lms/components/ui/badge"
 import { Plus, Edit, Trash2, Users, TrendingUp, FileText } from "lucide-react"
 import Link from "next/link"
 
@@ -51,7 +51,7 @@ export default function QuizzesManagementPage({ params }: { params: { id: string
           </div>
 
           <Button asChild>
-            <Link href={`/lecturer/courses/${params.id}/quizzes/new`}>
+            <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/new`}>
               <Plus className="mr-2 h-4 w-4" />
               Tạo bài kiểm tra
             </Link>
@@ -135,10 +135,10 @@ export default function QuizzesManagementPage({ params }: { params: { id: string
 
                   <div className="flex gap-2">
                     <Button variant="outline" asChild>
-                      <Link href={`/lecturer/courses/${params.id}/quizzes/${quiz.id}/results`}>Kết quả</Link>
+                      <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/${quiz.id}/results`}>Kết quả</Link>
                     </Button>
                     <Button variant="outline" asChild>
-                      <Link href={`/lecturer/courses/${params.id}/quizzes/${quiz.id}/edit`}>
+                      <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/${quiz.id}/edit`}>
                         <Edit className="mr-2 h-4 w-4" />
                         Chỉnh sửa
                       </Link>

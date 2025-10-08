@@ -18,15 +18,7 @@ const nextConfig = {
       skipDefaultConversion: true,
     },
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/auth/login',
-        permanent: true,
-      },
-    ];
-  },
+  // Removed global redirect - let pages handle their own routing
 };
 
 export default nextConfig;

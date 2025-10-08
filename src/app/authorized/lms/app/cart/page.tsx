@@ -5,7 +5,6 @@ import { Button } from "@lms/components/ui/button"
 import { Card } from "@lms/components/ui/card"
 import { Trash2, ShoppingCart, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 
 interface CartItem {
   id: string
@@ -60,7 +59,7 @@ export default function CartPage() {
             <h2 className="mb-2 font-sans text-xl font-semibold text-foreground">Giỏ hàng trống</h2>
             <p className="mb-6 text-muted-foreground">Hãy khám phá các khóa học và thêm vào giỏ hàng để bắt đầu học!</p>
             <Button asChild>
-              <Link href="/student/browse">Khám phá khóa học</Link>
+              <Link href="/authorized/lms/app/student/browse">Khám phá khóa học</Link>
             </Button>
           </Card>
         </div>
@@ -85,11 +84,9 @@ export default function CartPage() {
               <div className="space-y-4">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex gap-4 border-b border-border pb-4 last:border-0">
-                    <Image
+                    <img
                       src={item.image || "/placeholder.svg"}
                       alt={item.title}
-                      width={120}
-                      height={80}
                       className="h-20 w-32 rounded-lg object-cover"
                     />
 
@@ -148,7 +145,7 @@ export default function CartPage() {
               </div>
 
               <Button asChild className="w-full" size="lg">
-                <Link href="/checkout">
+                <Link href="/authorized/lms/app/checkout">
                   Thanh toán
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>

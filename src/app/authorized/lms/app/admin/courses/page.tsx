@@ -1,10 +1,22 @@
+"use client"
+
+import { useState } from "react"
 import { Header } from "@lms/components/header"
 import { Card, CardContent } from "@lms/components/ui/card"
 import { Button } from "@lms/components/ui/button"
 import { Input } from "@lms/components/ui/input"
 import { Badge } from "@lms/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
-import { Search, Filter, MoreVertical, Eye, Edit } from "lucide-react"
+import { Search, Filter, Eye, Trash2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@lms/components/ui/dialog"
+import Link from "next/link"
 
 const allCourses = [
   {
@@ -43,6 +55,29 @@ const allCourses = [
 ]
 
 export default function AdminCoursesPage() {
+  const [selectedCourse, setSelectedCourse] = useState<any>(null)
+  const [showApproveDialog, setShowApproveDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredCourses = allCourses.filter(
+    (course) =>
+      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.lecturer.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  const handleApprove = () => {
+    console.log("[v0] Approving course:", selectedCourse?.id)
+    setShowApproveDialog(false)
+    // TODO: Call API to approve course
+  }
+
+  const handleDelete = () => {
+    console.log("[v0] Deleting course:", selectedCourse?.id)
+    setShowDeleteDialog(false)
+    // TODO: Call API to delete course
+  }
+
   return (
     <div className="flex flex-col">
       <Header title="Quản lý khóa học" />
@@ -90,7 +125,12 @@ export default function AdminCoursesPage() {
         <div className="mb-6 flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm khóa học..." className="pl-10" />
+            <Input
+              placeholder="Tìm kiếm khóa học..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
           <Button variant="outline">
@@ -110,7 +150,7 @@ export default function AdminCoursesPage() {
 
           <TabsContent value="all">
             <div className="space-y-4">
-              {allCourses.map((course) => (
+              {filteredCourses.map((course) => (
                 <Card key={course.id} className="transition-shadow hover:shadow-lg">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -164,16 +204,34 @@ export default function AdminCoursesPage() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Xem
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/admin/courses/${course.id}/preview`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Xem
+                          </Link>
                         </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="mr-2 h-4 w-4" />
-                          Sửa
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <MoreVertical className="h-4 w-4" />
+                        {course.status === "pending" && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCourse(course)
+                              setShowApproveDialog(true)
+                            }}
+                          >
+                            Phê duyệt
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCourse(course)
+                            setShowDeleteDialog(true)
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Xóa
                         </Button>
                       </div>
                     </div>
@@ -196,6 +254,42 @@ export default function AdminCoursesPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Approval Dialog */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Phê duyệt khóa học</DialogTitle>
+            <DialogDescription>Bạn có chắc muốn phê duyệt khóa học "{selectedCourse?.title}"?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleApprove}>Phê duyệt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xóa khóa học</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn xóa khóa học "{selectedCourse?.title}"? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Hủy
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

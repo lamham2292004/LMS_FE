@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
+import { Button } from "@lms/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Progress } from "@lms/components/ui/progress"
+import { Badge } from "@lms/components/ui/badge"
+import { RadioGroup, RadioGroupItem } from "@lms/components/ui/radio-group"
+import { Label } from "@lms/components/ui/label"
 import { ChevronLeft, ChevronRight, CheckCircle2, PlayCircle, FileText, Menu, X } from "lucide-react"
 import Link from "next/link"
 
@@ -94,7 +94,7 @@ export default function LessonViewerPage() {
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Link href="/student/courses/1">
+          <Link href="/authorized/lms/app/student/courses/1">
             <Button variant="ghost" size="sm">
               <ChevronLeft className="mr-2 h-4 w-4" />
               Quay lại khóa học

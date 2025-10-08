@@ -17,7 +17,7 @@ export default function LecturerCoursesPage() {
     {
       id: 1,
       title: "Lập trình Web với React & Next.js",
-      thumbnail: "/course-1.jpg",
+      thumbnail: "/public/images/course-1.png",
       status: "published",
       students: 234,
       rating: 4.8,
@@ -68,7 +68,7 @@ export default function LecturerCoursesPage() {
             <h1 className="text-3xl font-bold">Quản lý khóa học</h1>
             <p className="text-muted-foreground mt-1">Quản lý tất cả khóa học của bạn</p>
           </div>
-          <Link href="/lecturer/courses/new">
+          <Link href="/authorized/lms/app/lecturer/courses/new">
             <Button size="lg" className="gap-2">
               <Plus className="h-5 w-5" />
               Tạo khóa học mới
@@ -195,13 +195,13 @@ export default function LecturerCoursesPage() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Link href={`/lecturer/courses/${course.id}`} className="flex-1">
+                        <Link href={`/authorized/lms/app/lecturer/courses/${course.id}`} className="flex-1">
                           <Button variant="outline" className="w-full gap-2 bg-transparent">
                             <Eye className="h-4 w-4" />
                             Quản lý
                           </Button>
                         </Link>
-                        <Link href={`/lecturer/courses/${course.id}/edit`} className="flex-1">
+                        <Link href={`/authorized/lms/app/lecturer/courses/${course.id}/edit`} className="flex-1">
                           <Button className="w-full gap-2">
                             <Edit className="h-4 w-4" />
                             Chỉnh sửa
@@ -246,7 +246,7 @@ export default function LecturerCoursesPage() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Link href={`/lecturer/courses/${course.id}/edit`} className="flex-1">
+                        <Link href={`/authorized/lms/app/lecturer/courses/${course.id}/edit`} className="flex-1">
                           <Button className="w-full gap-2">
                             <Edit className="h-4 w-4" />
                             Tiếp tục chỉnh sửa

@@ -66,10 +66,10 @@ export default function CheckoutSuccessPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Button asChild size="lg">
-              <Link href="/student/courses">Xem khóa học của tôi</Link>
+              <Link href="/authorized/lms/app/student/courses">Xem khóa học của tôi</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/student/browse">Tiếp tục khám phá</Link>
+              <Link href="/authorized/lms/app/student/browse">Tiếp tục khám phá</Link>
             </Button>
           </div>
 

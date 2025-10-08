@@ -36,6 +36,7 @@ export function Header({ title, showCart = false }: HeaderProps) {
 
   const userName = user?.full_name || "Người dùng"
   const userEmail = user?.email || "email@example.com"
+  const userType = user?.user_type || "Người dùng"
   const userAvatar = user?.avatar || ""
 
   return (
@@ -94,15 +95,16 @@ export function Header({ title, showCart = false }: HeaderProps) {
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{userName}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {userEmail}
-                </p>
+                <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
+                
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Hồ sơ</span>
+            <DropdownMenuItem asChild>
+              <Link href={`/authorized/lms/app/${user?.user_type}/profile`}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Hồ sơ</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

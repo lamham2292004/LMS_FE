@@ -6,6 +6,11 @@ export interface UserProfile {
   lecturer_code?: string;
   email: string;
   department: string;
+  phone: string;
+  birth_date: string;
+  gender?: string;
+  address: string;
+  avatar?: string;
   user_type: "student" | "lecturer";
   is_admin?: boolean;
   account?: {
@@ -27,6 +32,11 @@ export interface LoginResponse {
   lecturer_code?: string;
   email: string;
   department: string;
+  phone: string;
+  birth_date: string;
+  gender?: string;
+  address: string;
+  avatar?: string;
   token: string;
   user_type: "student" | "lecturer";
   is_admin?: boolean;

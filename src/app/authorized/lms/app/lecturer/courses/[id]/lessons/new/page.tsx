@@ -4,12 +4,12 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@lms/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Input } from "@lms/components/ui/input"
+import { Label } from "@lms/components/ui/label"
+import { Textarea } from "@lms/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@lms/components/ui/select"
 import { ArrowLeft, Upload, Video, FileText } from "lucide-react"
 import Link from "next/link"
 
@@ -20,7 +20,7 @@ export default function NewLessonPage({ params }: { params: { id: string } }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // TODO: Handle lesson creation
-    router.push(`/lecturer/courses/${params.id}`)
+    router.push(`/authorized/lms/app/lecturer/courses/${params.id}`)
   }
 
   return (
@@ -28,7 +28,7 @@ export default function NewLessonPage({ params }: { params: { id: string } }) {
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href={`/lecturer/courses/${params.id}`}>
+          <Link href={`/authorized/lms/app/lecturer/courses/${params.id}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -153,7 +153,7 @@ export default function NewLessonPage({ params }: { params: { id: string } }) {
                   <p className="text-sm text-muted-foreground mb-4">
                     Bài kiểm tra cần được tạo riêng trong phần Quản lý bài kiểm tra
                   </p>
-                  <Link href={`/lecturer/courses/${params.id}/quizzes/new`}>
+                  <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/new`}>
                     <Button type="button" variant="outline">
                       Đi tới tạo bài kiểm tra
                     </Button>
@@ -165,7 +165,7 @@ export default function NewLessonPage({ params }: { params: { id: string } }) {
 
           {/* Actions */}
           <div className="flex justify-end gap-4">
-            <Link href={`/lecturer/courses/${params.id}`}>
+            <Link href={`/authorized/lms/app/lecturer/courses/${params.id}`}>
               <Button type="button" variant="outline">
                 Hủy
               </Button>

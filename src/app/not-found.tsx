@@ -6,7 +6,7 @@ export default function NotFound() {
       <h2 className="text-2xl font-bold mb-4">404 - Trang không tồn tại</h2>
       <p className="mb-4">Xin lỗi, trang bạn đang tìm không tồn tại.</p>
       <Link
-        href="/"
+        href="/authorized/dashboard"
         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
         Quay lại Trang chủ

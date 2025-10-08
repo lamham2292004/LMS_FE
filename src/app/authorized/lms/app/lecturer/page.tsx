@@ -95,7 +95,7 @@ export default function LecturerDashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Khóa học của tôi</h2>
             <Button asChild>
-              <Link href="/lecturer/courses/new">
+              <Link href="/authorized/lms/app/lecturer/courses/new">
                 <Plus className="mr-2 h-4 w-4" />
                 Tạo khóa học mới
               </Link>
@@ -138,10 +138,10 @@ export default function LecturerDashboard() {
 
                   <div className="flex gap-2">
                     <Button variant="outline" asChild>
-                      <Link href={`/lecturer/courses/${course.id}`}>Quản lý</Link>
+                      <Link href={`/authorized/lms/app/lecturer/courses/${course.id}`}>Quản lý</Link>
                     </Button>
                     <Button asChild>
-                      <Link href={`/lecturer/courses/${course.id}/edit`}>Chỉnh sửa</Link>
+                      <Link href={`/authorized/lms/app/lecturer/courses/${course.id}/edit`}>Chỉnh sửa</Link>
                     </Button>
                   </div>
                 </div>

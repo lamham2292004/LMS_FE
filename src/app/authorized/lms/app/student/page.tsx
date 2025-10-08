@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/car
 import { Button } from "@lms/components/ui/button"
 import { Progress } from "@lms/components/ui/progress"
 import { Trophy, Clock, BookOpen, Target, GraduationCap } from "lucide-react"
+import Link from "next/link"
 
 export default function StudentDashboard() {
   return (
@@ -19,7 +20,9 @@ export default function StudentDashboard() {
                 <p className="text-muted-foreground">
                   Hôm nay bạn đã sẵn sàng học chưa? Hãy tiếp tục hành trình của bạn!
                 </p>
-                <Button className="mt-4">Tiếp tục học</Button>
+                <Button className="mt-4" asChild>
+                  <Link href="/authorized/lms/app/student/courses/1/learn">Tiếp tục học</Link>
+                </Button>
               </div>
               <div className="hidden md:block">
                 <div className="h-32 w-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
@@ -85,26 +88,29 @@ export default function StudentDashboard() {
           <CardContent className="space-y-4">
             {[
               {
+                id: 1,
                 title: "Lập trình Python cơ bản",
                 progress: 65,
                 lessons: "13/20 bài học",
                 image: "python programming course",
               },
               {
+                id: 2,
                 title: "Web Development với React",
                 progress: 40,
                 lessons: "8/20 bài học",
                 image: "react web development",
               },
               {
+                id: 3,
                 title: "Cơ sở dữ liệu SQL",
                 progress: 80,
                 lessons: "16/20 bài học",
                 image: "database SQL course",
               },
-            ].map((course, index) => (
+            ].map((course) => (
               <div
-                key={index}
+                key={course.id}
                 className="flex items-center gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-accent"
               >
                 <div className="h-16 w-16 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -118,7 +124,11 @@ export default function StudentDashboard() {
                   </div>
                   <p className="text-xs text-muted-foreground">{course.lessons}</p>
                 </div>
-                <Button>Tiếp tục</Button>
+                <Button asChild>
+                  <Link href={`/authorized/lms/app/student/courses/${course.id}/learn`}>
+                    Tiếp tục học
+                  </Link>
+                </Button>
               </div>
             ))}
           </CardContent>

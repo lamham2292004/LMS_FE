@@ -1,10 +1,10 @@
-import { Header } from "@/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Header } from "@lms/components/header"
+import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Button } from "@lms/components/ui/button"
+import { Badge } from "@lms/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
+import { Progress } from "@lms/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
 import { ArrowLeft, Mail, Calendar, TrendingUp, Award, Clock } from "lucide-react"
 import Link from "next/link"
 
@@ -68,7 +68,7 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
       <div className="flex-1 p-6">
         <div className="mx-auto max-w-6xl">
           <Button variant="ghost" className="mb-6" asChild>
-            <Link href={`/lecturer/courses/${params.id}`}>
+            <Link href={`/authorized/lms/app/lecturer/courses/${params.id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Quay lại
             </Link>

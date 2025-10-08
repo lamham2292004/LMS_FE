@@ -12,15 +12,16 @@ interface SidebarProps {
 const menuItems = {
   student: [
     { href: "/authorized/lms/app/student", label: "Tổng quan", icon: Home },
-    { href: "/authorized/lms/app/student/courses", label: "Khóa học", icon: BookOpen },
+    { href: "/authorized/lms/app/student/browse", label: "Khám phá", icon: BookOpen },
+    { href: "/authorized/lms/app/student/courses", label: "Khóa học của tôi", icon: GraduationCap },
     { href: "/authorized/lms/app/student/tests", label: "Bài kiểm tra", icon: FileText },
     { href: "/authorized/lms/app/student/profile", label: "Hồ sơ", icon: UserCheck },
   ],
   lecturer: [
-    { href: "/authorized/lms/app/lecturer", label: "Tổng quan", icon: Home },
-    { href: "/authorized/lms/app/lecturer/courses", label: "Khóa học", icon: BookOpen },
+    { href: "/authorized/lms/app/lecturer", label: "Bảng điều khiển", icon: Home },
+    { href: "/authorized/lms/app/lecturer/courses", label: "Quản lý khóa học", icon: BookOpen },
     { href: "/authorized/lms/app/lecturer/students", label: "Học viên", icon: Users },
-    { href: "/authorized/lms/app/lecturer", label: "Báo cáo", icon: BarChart3 },
+    { href: "/authorized/lms/app/lecturer/profile", label: "Hồ sơ", icon: UserCheck },
   ],
   admin: [
     { href: "/authorized/lms/app/admin", label: "Tổng quan", icon: Home },
@@ -67,7 +68,7 @@ export function Sidebar({ role }: SidebarProps) {
       
       <div className="border-t border-border p-4">
         <Link
-          href="/authorized/lms/app/settings"
+          href={`/authorized/lms/app/${role}/settings`}
           className="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           <Settings className="mr-3 h-4 w-4" />

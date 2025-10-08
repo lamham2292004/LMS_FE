@@ -196,14 +196,14 @@ export default function TestsPage() {
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/student/tests/${result.id}/review`}>
+                        <Link href={`/authorized/lms/app/student/tests/${result.id}/review`}>
                           <Eye className="mr-2 h-4 w-4" />
                           Xem chi tiết
                         </Link>
                       </Button>
                       {result.status === "failed" && (
                         <Button size="sm" asChild>
-                          <Link href={`/student/courses/${result.courseId}/learn`}>Làm lại</Link>
+                          <Link href={`/authorized/lms/app/student/courses/${result.courseId}/learn`}>Làm lại</Link>
                         </Button>
                       )}
                     </div>

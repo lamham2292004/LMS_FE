@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Header } from "@lms/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Button } from "@lms/components/ui/button"
@@ -5,8 +8,16 @@ import { Input } from "@lms/components/ui/input"
 import { Label } from "@lms/components/ui/label"
 import { Badge } from "@lms/components/ui/badge"
 import { Plus, Edit, Trash2, FolderOpen } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@lms/components/ui/dialog"
 
-const categories = [
+const initialCategories = [
   {
     id: 1,
     name: "Lập trình",
@@ -45,6 +56,31 @@ const categories = [
 ]
 
 export default function CategoriesPage() {
+  const [categories, setCategories] = useState(initialCategories)
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<any>(null)
+  const [newCategory, setNewCategory] = useState({ name: "", slug: "", description: "" })
+
+  const handleAdd = () => {
+    console.log("[v0] Adding category:", newCategory)
+    setCategories([...categories, { ...newCategory, id: categories.length + 1, courses: 0 }])
+    setShowAddDialog(false)
+    setNewCategory({ name: "", slug: "", description: "" })
+  }
+
+  const handleEdit = () => {
+    console.log("[v0] Editing category:", selectedCategory)
+    setShowEditDialog(false)
+  }
+
+  const handleDelete = () => {
+    console.log("[v0] Deleting category:", selectedCategory?.id)
+    setCategories(categories.filter((c) => c.id !== selectedCategory?.id))
+    setShowDeleteDialog(false)
+  }
+
   return (
     <div className="flex flex-col">
       <Header title="Quản lý danh mục" />
@@ -56,7 +92,7 @@ export default function CategoriesPage() {
             <p className="text-muted-foreground">Quản lý các danh mục và phân loại</p>
           </div>
 
-          <Button>
+          <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Thêm danh mục
           </Button>
@@ -115,10 +151,24 @@ export default function CategoriesPage() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button variant="outline" size="icon">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedCategory(category)
+                            setShowEditDialog(true)
+                          }}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedCategory(category)
+                            setShowDeleteDialog(true)
+                          }}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -159,6 +209,92 @@ export default function CategoriesPage() {
             </Card>
           </div>
         </div>
+
+        {/* Dialogs */}
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Thêm danh mục mới</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Tên danh mục</Label>
+                <Input
+                  id="name"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug</Label>
+                <Input
+                  id="slug"
+                  value={newCategory.slug}
+                  onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Mô tả</Label>
+                <Input
+                  id="description"
+                  value={newCategory.description}
+                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleAdd}>Thêm</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa danh mục</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Tên danh mục</Label>
+                <Input defaultValue={selectedCategory?.name} />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug</Label>
+                <Input defaultValue={selectedCategory?.slug} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mô tả</Label>
+                <Input defaultValue={selectedCategory?.description} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleEdit}>Lưu</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Xóa danh mục</DialogTitle>
+              <DialogDescription>Bạn có chắc muốn xóa danh mục "{selectedCategory?.name}"?</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                Hủy
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                Xóa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

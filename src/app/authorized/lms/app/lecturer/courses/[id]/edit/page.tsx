@@ -1,15 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Header } from "@lms/components/header"
+import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Button } from "@lms/components/ui/button"
+import { Input } from "@lms/components/ui/input"
+import { Label } from "@lms/components/ui/label"
+import { Textarea } from "@lms/components/ui/textarea"
+import { Badge } from "@lms/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
 import { Save, Eye, Plus, GripVertical, Trash2, Edit } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@lms/components/ui/dialog"
 import Link from "next/link"
 
 const initialLessons = [
@@ -20,6 +28,22 @@ const initialLessons = [
 
 export default function EditCoursePage({ params }: { params: { id: string } }) {
   const [lessons, setLessons] = useState(initialLessons)
+  const [selectedLesson, setSelectedLesson] = useState<any>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [editTitle, setEditTitle] = useState("")
+
+  const handleEditLesson = () => {
+    console.log("[v0] Editing lesson:", selectedLesson?.id, "New title:", editTitle)
+    setLessons(lessons.map((l) => (l.id === selectedLesson?.id ? { ...l, title: editTitle } : l)))
+    setShowEditDialog(false)
+  }
+
+  const handleDeleteLesson = () => {
+    console.log("[v0] Deleting lesson:", selectedLesson?.id)
+    setLessons(lessons.filter((l) => l.id !== selectedLesson?.id))
+    setShowDeleteDialog(false)
+  }
 
   return (
     <div className="flex flex-col">
@@ -35,7 +59,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
 
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/student/courses/${params.id}`}>
+              <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/preview`}>
                 <Eye className="mr-2 h-4 w-4" />
                 Xem trước
               </Link>
@@ -120,9 +144,11 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Chương trình học</CardTitle>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Thêm bài học
+                  <Button asChild>
+                    <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/lessons/new`}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Thêm bài học
+                    </Link>
                   </Button>
                 </div>
               </CardHeader>
@@ -145,10 +171,25 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedLesson(lesson)
+                            setEditTitle(lesson.title)
+                            setShowEditDialog(true)
+                          }}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedLesson(lesson)
+                            setShowDeleteDialog(true)
+                          }}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -158,9 +199,11 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
 
                 <div className="mt-6 rounded-lg border border-dashed p-8 text-center">
                   <p className="mb-4 text-muted-foreground">Kéo thả để sắp xếp lại thứ tự bài học</p>
-                  <Button variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Thêm bài học mới
+                  <Button variant="outline" asChild>
+                    <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/lessons/new`}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Thêm bài học mới
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
@@ -238,6 +281,46 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa bài học</DialogTitle>
+            <DialogDescription>Cập nhật thông tin bài học</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Tên bài học</Label>
+              <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleEditLesson}>Lưu thay đổi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xóa bài học</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn xóa bài học "{selectedLesson?.title}"? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Hủy
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteLesson}>
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -16,7 +16,7 @@ export default function NewCoursePage() {
 
   const handleCreateCourse = () => {
     // In real app, create course via API and redirect to the new course's edit page
-    router.push("/lecturer/courses")
+    router.push("/authorized/lms/app/lecturer/courses")
   }
 
   return (

@@ -1,9 +1,9 @@
-import { Header } from "@/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Header } from "@lms/components/header"
+import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Button } from "@lms/components/ui/button"
+import { Badge } from "@lms/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
 import { TrendingUp, TrendingDown, Users, Clock, CheckCircle2, XCircle } from "lucide-react"
 
 const quizStats = {

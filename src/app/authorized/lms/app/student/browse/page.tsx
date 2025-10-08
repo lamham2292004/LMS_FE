@@ -1,9 +1,9 @@
-import { Header } from "@/components/header"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Header } from "@lms/components/header"
+import { Card, CardContent } from "@lms/components/ui/card"
+import { Button } from "@lms/components/ui/button"
+import { Badge } from "@lms/components/ui/badge"
+import { Input } from "@lms/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
 import { Search, Star, Users, Clock, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 
@@ -196,12 +196,12 @@ export default function BrowseCoursesPage() {
                       </div>
                       <div className="flex gap-2">
                         <Button size="icon" variant="outline" asChild>
-                          <Link href="/cart">
+                          <Link href="/authorized/lms/app/cart">
                             <ShoppingCart className="h-4 w-4" />
                           </Link>
                         </Button>
                         <Button asChild>
-                          <Link href={`/student/courses/${course.id}`}>Xem chi tiết</Link>
+                          <Link href={`/authorized/lms/app/student/courses/${course.id}`}>Xem chi tiết</Link>
                         </Button>
                       </div>
                     </div>
@@ -229,7 +229,7 @@ export default function BrowseCoursesPage() {
                       <h3 className="mb-2 line-clamp-2 text-lg font-semibold">{course.title}</h3>
                       <p className="mb-3 text-sm text-muted-foreground">{course.instructor}</p>
                       <Button className="w-full" asChild>
-                        <Link href={`/student/courses/${course.id}`}>Đăng ký ngay</Link>
+                        <Link href={`/authorized/lms/app/student/courses/${course.id}`}>Đăng ký ngay</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -256,7 +256,7 @@ export default function BrowseCoursesPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-primary">{course.price.toLocaleString()}đ</span>
                         <Button size="icon" variant="outline" asChild>
-                          <Link href="/cart">
+                          <Link href="/authorized/lms/app/cart">
                             <ShoppingCart className="h-4 w-4" />
                           </Link>
                         </Button>

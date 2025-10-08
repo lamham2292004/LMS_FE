@@ -155,7 +155,7 @@ export default function MyCoursesPage() {
                       </p>
                     </div>
 
-                    <Link href={`/student/courses/${course.id}`}>
+                    <Link href={`/authorized/lms/app/student/courses/${course.id}`}>
                       <Button className="w-full">Tiếp tục học</Button>
                     </Link>
                   </CardContent>
@@ -200,7 +200,7 @@ export default function MyCoursesPage() {
 
                     <div className="flex gap-2">
                       <Button variant="outline" className="flex-1 bg-transparent" asChild>
-                        <Link href={`/student/courses/${course.id}`}>Xem lại</Link>
+                        <Link href={`/authorized/lms/app/student/courses/${course.id}`}>Xem lại</Link>
                       </Button>
                       {course.certificate && <Button className="flex-1">Chứng chỉ</Button>}
                     </div>

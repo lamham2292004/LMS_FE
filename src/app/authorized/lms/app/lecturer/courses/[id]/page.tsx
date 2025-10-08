@@ -1,9 +1,9 @@
-import { Header } from "@/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Header } from "@lms/components/header"
+import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { Button } from "@lms/components/ui/button"
+import { Badge } from "@lms/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
 import { Users, DollarSign, Star, TrendingUp, Edit, Eye, Plus } from "lucide-react"
 import Link from "next/link"
 
@@ -93,13 +93,13 @@ export default function CourseManagementPage({ params }: { params: { id: string 
 
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/student/courses/${params.id}`}>
+              <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/preview`}>
                 <Eye className="mr-2 h-4 w-4" />
                 Xem trước
               </Link>
             </Button>
             <Button asChild>
-              <Link href={`/lecturer/courses/${params.id}/edit`}>
+              <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Chỉnh sửa
               </Link>
@@ -224,7 +224,7 @@ export default function CourseManagementPage({ params }: { params: { id: string 
                         </div>
 
                         <Button variant="outline" size="sm" asChild>
-                          <Link href={`/lecturer/courses/${params.id}/students/${student.id}`}>Xem chi tiết</Link>
+                          <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/students/${student.id}`}>Xem chi tiết</Link>
                         </Button>
                       </div>
                     </div>
@@ -240,7 +240,7 @@ export default function CourseManagementPage({ params }: { params: { id: string 
                 <div className="flex items-center justify-between">
                   <CardTitle>Hiệu suất bài học</CardTitle>
                   <Button asChild>
-                    <Link href={`/lecturer/courses/${params.id}/lessons/new`}>
+                    <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/lessons/new`}>
                       <Plus className="mr-2 h-4 w-4" />
                       Thêm bài học
                     </Link>
@@ -286,7 +286,7 @@ export default function CourseManagementPage({ params }: { params: { id: string 
                 <div className="flex items-center justify-between">
                   <CardTitle>Bài kiểm tra</CardTitle>
                   <Button asChild>
-                    <Link href={`/lecturer/courses/${params.id}/quizzes/new`}>
+                    <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/new`}>
                       <Plus className="mr-2 h-4 w-4" />
                       Tạo bài kiểm tra mới
                     </Link>
@@ -306,10 +306,10 @@ export default function CourseManagementPage({ params }: { params: { id: string 
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/lecturer/courses/${params.id}/quizzes/1/results`}>Kết quả</Link>
+                        <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/1/results`}>Kết quả</Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/lecturer/courses/${params.id}/quizzes/1/edit`}>Chỉnh sửa</Link>
+                        <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/1/edit`}>Chỉnh sửa</Link>
                       </Button>
                     </div>
                   </div>
@@ -325,10 +325,10 @@ export default function CourseManagementPage({ params }: { params: { id: string 
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/lecturer/courses/${params.id}/quizzes/2/results`}>Kết quả</Link>
+                        <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/2/results`}>Kết quả</Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/lecturer/courses/${params.id}/quizzes/2/edit`}>Chỉnh sửa</Link>
+                        <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/2/edit`}>Chỉnh sửa</Link>
                       </Button>
                     </div>
                   </div>
