@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/car
 import { Badge } from "@lms/components/ui/badge"
 import { Button } from "@lms/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
+import Link from "next/link"
 import {
   Users,
   BookOpen,
@@ -180,7 +181,9 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <CardTitle>Người dùng mới</CardTitle>
                 <Button variant="outline" size="sm">
-                  Xem tất cả
+                  <Link href={`/authorized/lms/app/admin/users`}>
+                            Xem tất cả
+                  </Link>
                 </Button>
               </div>
             </CardHeader>

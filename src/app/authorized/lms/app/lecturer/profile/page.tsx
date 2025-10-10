@@ -23,8 +23,9 @@ import {
 import { Camera, HelpCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@lms/components/ui/tooltip"
 import { useAuth } from "@/features/auth"
+import "@/lib/api-test" // Import API test utility
 export default function ProfilePage() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, isAuthenticated, refreshUser } = useAuth()
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -33,27 +34,133 @@ export default function ProfilePage() {
     countryCode: "+84",
     country: "Vietnam",
     province: "",
-    occupation: "Giáo viên",
+    occupation: "",
   })
 
+  // Test direct API call
+  const testDirectAPI = async () => {
+    const token = localStorage.getItem('auth_token');
+    const userType = localStorage.getItem('user_type');
+    console.log("=== DIRECT API TEST (LECTURER) ===");
+    console.log("Token:", token?.substring(0, 50) + "...");
+    console.log("User type:", userType);
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/${userType}/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      console.log("Direct API Response:", data);
+      console.log("Birth date from direct call:", data.data?.birth_date);
+    } catch (error) {
+      console.error("Direct API Error:", error);
+    }
+  };
+
   useEffect(() => {
+    console.log("Profile page - User data:", user);
+    console.log("Profile page - User type:", user?.user_type);
+    console.log("Profile page - Is loading:", isLoading);
+    
+    // Check token for birth_date
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          console.log("Profile page - Token payload:", payload);
+          console.log("Profile page - birth_date from token:", payload.birth_date);
+        }
+      } catch (error) {
+        console.error("Profile page - Token decode error:", error);
+      }
+    }
+    
+    // Test direct API on mount
+    if (!isLoading && user) {
+      testDirectAPI();
+    }
+    
     if (user) {
+      console.log("Profile page - Setting form data with user:", user);
+      console.log("Profile page - birth_date raw:", user.birth_date);
+      console.log("Profile page - address raw:", user.address);
+      
+      // Format birth_date from YYYY-MM-DD to DD/MM/YYYY
+      let formattedBirthDate = "";
+      if (user.birth_date) {
+        try {
+          const date = new Date(user.birth_date);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            formattedBirthDate = `${day}/${month}/${year}`;
+          }
+        } catch (error) {
+          console.error("Error formatting birth_date:", error);
+          formattedBirthDate = user.birth_date;
+        }
+      }
+      
       setFormData({
         fullName: user.full_name || "",
         email: user.email || "",
-        dateOfBirth: user.birth_date || "",
+        dateOfBirth: formattedBirthDate,
         phone: user.phone || "",
         countryCode: "+84",
         country: "Vietnam",
         province: user.address || "",
-        occupation: "Giáo viên",
+        occupation: user.user_type === "lecturer" ? "Giáo viên" : "Sinh viên",
       })
+      
+      console.log("Profile page - Formatted birth_date:", formattedBirthDate);
+      console.log("Profile page - Final form data:", {
+        fullName: user.full_name || "",
+        email: user.email || "",
+        dateOfBirth: formattedBirthDate,
+        phone: user.phone || "",
+        countryCode: "+84",
+        country: "Vietnam",
+        province: user.address || "",
+        occupation: user.user_type === "lecturer" ? "Giáo viên" : "Sinh viên",
+      });
+    } else {
+      console.log("Profile page - No user data available");
     }
-  }, [user])
+  }, [user, isLoading])
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Handle form submission
     console.log("Form submitted:", formData)
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Đang tải thông tin người dùng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Không thể lấy thông tin người dùng</p>
+          <p className="text-muted-foreground">Vui lòng đăng nhập lại</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -74,7 +181,7 @@ export default function ProfilePage() {
           <div className="relative inline-block">
             <Avatar className="h-32 w-32 border-4 border-background">
               <AvatarImage src="/public/images/course-1.png" />
-              <AvatarFallback className="text-2xl">{user?.full_name.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="text-2xl">{user?.full_name?.charAt(0) || "U"}</AvatarFallback>
             </Avatar>
             <Button
               size="icon"
@@ -85,6 +192,41 @@ export default function ProfilePage() {
             </Button>
           </div>
         </div>
+
+        {/* Debug Info */}
+        {/* {user && (
+          <Card className="mb-6 border-purple-200 bg-purple-50">
+            <CardHeader>
+              <CardTitle className="text-sm text-purple-800">Debug Info (Lecturer)</CardTitle>
+              <CardDescription>
+                <button 
+                  onClick={testDirectAPI}
+                  className="text-xs bg-purple-500 text-white px-2 py-1 rounded"
+                >
+                  Test Direct API Call
+                </button>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <p><strong>Raw birth_date:</strong> {user.birth_date || "null"}</p>
+                  <p><strong>Raw address:</strong> {user.address || "null"}</p>
+                  <p><strong>User type:</strong> {user.user_type || "null"}</p>
+                  <p><strong>Lecturer code:</strong> {user.lecturer_code || "null"}</p>
+                  <p><strong>Email:</strong> {user.email || "null"}</p>
+                </div>
+                <div>
+                  <p><strong>Formatted birth_date:</strong> {formData.dateOfBirth || "empty"}</p>
+                  <p><strong>Form province:</strong> {formData.province || "empty"}</p>
+                  <p><strong>All user keys:</strong> {Object.keys(user).join(", ")}</p>
+                  <p><strong>Token exists:</strong> {typeof window !== 'undefined' && localStorage.getItem('auth_token') ? 'Yes' : 'No'}</p>
+                  <p><strong>Stored user_type:</strong> {typeof window !== 'undefined' ? localStorage.getItem('user_type') || 'null' : 'null'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )} */}
 
         {/* Profile Form */}
         <Card>
@@ -210,69 +352,43 @@ export default function ProfilePage() {
                 {/* Province */}
                 <div className="space-y-2">
                   <Label htmlFor="province">Tỉnh thành</Label>
-                  <Select value={formData.province} onValueChange={(v) => setFormData({ ...formData, province: v })}>
-                    <SelectTrigger id="province">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Hà Nội">Hà Nội</SelectItem>
-                      <SelectItem value="Hồ Chí Minh">Hồ Chí Minh</SelectItem>
-                      <SelectItem value="Hưng Yên">Hưng Yên</SelectItem>
-                      <SelectItem value="Đà Nẵng">Đà Nẵng</SelectItem>
-                      <SelectItem value="Hải Phòng">Hải Phòng</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                      id="province"
+                      value={formData.province}
+                      onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                      className="flex-1"
+                    />
                 </div>
 
                 {/* Occupation */}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="occupation">Nghề nghiệp</Label>
-                  <Select
+                  <Input
+                    id="occupation"
                     value={formData.occupation}
-                    onValueChange={(v) => setFormData({ ...formData, occupation: v })}
-                  >
-                    <SelectTrigger id="occupation">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Sinh viên">Sinh viên</SelectItem>
-                      <SelectItem value="Lập trình viên">Lập trình viên</SelectItem>
-                      <SelectItem value="Kỹ sư">Kỹ sư</SelectItem>
-                      <SelectItem value="Giáo viên">Giáo viên</SelectItem>
-                      <SelectItem value="Khác">Khác</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                    className="flex-1"
+                  />
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-4">
-                {/* <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" className="text-destructive hover:text-destructive">
-                      Xóa tài khoản
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Bạn có chắc chắn?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Hành động này không thể hoàn tác. Tài khoản và tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Hủy</AlertDialogCancel>
-                      <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Xóa tài khoản
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog> */}
-
-                <Button type="submit" size="lg">
-                  Lưu thay đổi
+              {/* <div className="flex items-center gap-4 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => refreshUser()}
+                >
+                  Làm mới thông tin
                 </Button>
-              </div>
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={testDirectAPI}
+                >
+                  Test API
+                </Button>
+              </div> */}
             </form>
           </CardContent>
         </Card>

@@ -99,8 +99,35 @@ class ApiClient {
     return { message: "Đăng xuất thành công" };
   }
 
-  async getProfile(): Promise<ApiResponse<UserProfile>> {
-    return this.request<UserProfile>("/v1/me");
+  async getProfile(userType?: "student" | "lecturer"): Promise<ApiResponse<UserProfile>> {
+    // First get token claims from /v1/me to get birth_date and other fields
+    const meResponse = await this.request<any>("/v1/me");
+    console.log("API Client - /v1/me response:", meResponse);
+    
+    // Then get detailed profile from user-specific endpoint
+    const endpoint = userType === "student"
+      ? "/v1/student/profile"
+      : userType === "lecturer"
+      ? "/v1/lecturer/profile"
+      : "/v1/me";
+    
+    const profileResponse = await this.request<UserProfile>(endpoint);
+    console.log("API Client - Profile endpoint response:", profileResponse);
+    
+    // Merge data: profile API data + token claims
+    if (profileResponse.data && meResponse.data) {
+      const mergedData = {
+        ...profileResponse.data,
+        // Add missing fields from token (from /v1/me)
+        birth_date: profileResponse.data.birth_date || meResponse.data.birth_date,
+        gender: profileResponse.data.gender || meResponse.data.gender,
+        address: profileResponse.data.address || meResponse.data.address,
+      };
+      console.log("API Client - Merged profile data:", mergedData);
+      return { ...profileResponse, data: mergedData };
+    }
+    
+    return profileResponse;
   }
 
   async refreshToken(): Promise<ApiResponse<{ token: string }>> {

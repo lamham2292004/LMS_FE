@@ -205,7 +205,7 @@ export default function AdminCoursesPage() {
 
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" asChild>
-                          <Link href={`/admin/courses/${course.id}/preview`}>
+                          <Link href={`/authorized/lms/app/admin/courses/${course.id}/preview`}>
                             <Eye className="mr-2 h-4 w-4" />
                             Xem
                           </Link>
