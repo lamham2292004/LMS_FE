@@ -1,84 +1,191 @@
 // API Client for Backend Integration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+import { API_CONFIG, STORAGE_KEYS } from "./config";
 
-interface ApiResponse<T> {
-  data?: T
-  message?: string
-  status?: boolean
-  errors?: Record<string, string[]>
+// API Response Types
+export interface ApiResponse<T = any> {
+  data?: T;
+  user?: T;
+  token?: string;
+  message: string;
+  status?: number;
+  errors?: Record<string, string[]>;
 }
 
+// HTTP Client
 class ApiClient {
-  private baseURL: string
+  private baseURL: string;
+  private token: string | null = null;
 
   constructor(baseURL: string) {
-    this.baseURL = baseURL
-  }
-
-  private getToken(): string | null {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('token')
+    this.baseURL = baseURL;
+    this.token =
+      typeof window !== "undefined"
+        ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
+        : null;
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const token = this.getToken()
-    
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    }
+    const url = `${this.baseURL}${endpoint}`;
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
+    const config: RequestInit = {
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...options.headers,
+      },
+      ...options,
+    };
 
     try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        ...options,
-        headers,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw {
-          status: response.status,
-          message: data.message || 'An error occurred',
-          errors: data.errors,
-        }
+      const response = await fetch(url, config);
+      
+      // Handle non-JSON responses
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        data = { message: await response.text() };
       }
 
-      return data
-    } catch (error: any) {
-      console.error('API Error:', error)
-      throw error
+      if (!response.ok) {
+        throw new Error(
+          data.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      return data;
+    } catch (error) {
+      console.error("API request failed:", error);
+      throw error;
     }
   }
 
+  // Authentication Methods
+  async login(credentials: { username: string; password: string; user_type?: string }): Promise<ApiResponse<any>> {
+    console.log("API Client - Login credentials:", credentials);
+
+    const response = await this.request<any>("/v1/login", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    });
+
+    console.log("API Client - Raw response:", response);
+
+    // Handle both formats: response.data.token OR response.token
+    if (response.data?.token || response.token) {
+      const token = response.data?.token || response.token;
+      this.setToken(token!);
+      console.log("API Client - Token set successfully:", token);
+    } else {
+      console.log("API Client - No token in response");
+    }
+
+    return response;
+  }
+
+  async logout(): Promise<ApiResponse> {
+    try {
+      await this.request("/v1/logout", { method: "POST" });
+    } finally {
+      this.clearToken();
+    }
+
+    return { message: "Đăng xuất thành công" };
+  }
+
+  async getProfile(userType?: "student" | "lecturer"): Promise<ApiResponse<any>> {
+    // First get token claims from /v1/me to get birth_date and other fields
+    const meResponse = await this.request<any>("/v1/me");
+    console.log("API Client - /v1/me response:", meResponse);
+    
+    // Then get detailed profile from user-specific endpoint
+    const endpoint = userType === "student"
+      ? "/v1/student/profile"
+      : userType === "lecturer"
+      ? "/v1/lecturer/profile"
+      : "/v1/me";
+    
+    const profileResponse = await this.request<any>(endpoint);
+    console.log("API Client - Profile endpoint response:", profileResponse);
+    
+    // Merge data: profile API data + token claims
+    if (profileResponse.data && meResponse.data) {
+      const mergedData = {
+        ...profileResponse.data,
+        // Add missing fields from token (from /v1/me)
+        birth_date: profileResponse.data.birth_date || meResponse.data.birth_date,
+        gender: profileResponse.data.gender || meResponse.data.gender,
+        address: profileResponse.data.address || meResponse.data.address,
+      };
+      console.log("API Client - Merged profile data:", mergedData);
+      return { ...profileResponse, data: mergedData };
+    }
+    
+    return profileResponse;
+  }
+
+  async refreshToken(): Promise<ApiResponse<{ token: string }>> {
+    const response = await this.request<{ token: string }>("/v1/refresh", {
+      method: "POST",
+    });
+
+    if (response.data?.token) {
+      this.setToken(response.data.token);
+    }
+
+    return response;
+  }
+
+  // Generic CRUD Methods
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'GET' })
+    return this.request<T>(endpoint, { method: 'GET' });
   }
 
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
-    })
+    });
   }
 
   async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
-    })
+    });
   }
 
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' })
+    return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  // Token Management
+  setToken(token: string): void {
+    this.token = token;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+    }
+  }
+
+  getToken(): string | null {
+    return this.token;
+  }
+
+  clearToken(): void {
+    this.token = null;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    }
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.token;
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL)
+// Export singleton instance
+export const apiClient = new ApiClient(API_CONFIG.baseUrl);

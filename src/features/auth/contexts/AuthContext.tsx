@@ -190,12 +190,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log("AuthContext - User set successfully:", userData);
       } else {
         console.log("AuthContext - No user data in response");
+        throw new Error("Không nhận được thông tin người dùng từ server");
       }
 
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error("AuthContext - Login error:", error);
-      throw error;
+      
+      // Enhanced error handling
+      let errorMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+      
+      if (error.message) {
+        if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          errorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác";
+        } else if (error.message.includes("403") || error.message.includes("Forbidden")) {
+          errorMessage = "Tài khoản của bạn không có quyền truy cập";
+        } else if (error.message.includes("500") || error.message.includes("Internal Server Error")) {
+          errorMessage = "Lỗi server. Vui lòng thử lại sau";
+        } else if (error.message.includes("Network") || error.message.includes("fetch")) {
+          errorMessage = "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      const enhancedError = new Error(errorMessage);
+      enhancedError.cause = error;
+      throw enhancedError;
     } finally {
       setIsLoggingIn(false);
     }
