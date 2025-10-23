@@ -1,3 +1,5 @@
+"use client"
+
 import { Header } from "@lms/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Button } from "@lms/components/ui/button"
@@ -5,62 +7,94 @@ import { Badge } from "@lms/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
 import { Progress } from "@lms/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
-import { ArrowLeft, Mail, Calendar, TrendingUp, Award, Clock } from "lucide-react"
+import { ArrowLeft, Mail, Calendar, TrendingUp, Award, Clock, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import Link from "next/link"
-
-const studentData = {
-  id: 1,
-  name: "Nguyễn Văn A",
-  email: "nguyenvana@email.com",
-  enrolledDate: "15/03/2025",
-  lastActive: "2 giờ trước",
-  progress: 85,
-  completedLessons: 17,
-  totalLessons: 20,
-  timeSpent: "24 giờ 30 phút",
-}
-
-const quizResults = [
-  {
-    id: 1,
-    title: "Bài kiểm tra Module 1",
-    score: 85,
-    maxScore: 100,
-    attempts: 2,
-    lastAttempt: "20/03/2025",
-    timeSpent: "25 phút",
-    status: "passed",
-  },
-  {
-    id: 2,
-    title: "Bài kiểm tra Module 2",
-    score: 92,
-    maxScore: 100,
-    attempts: 1,
-    lastAttempt: "25/03/2025",
-    timeSpent: "28 phút",
-    status: "passed",
-  },
-  {
-    id: 3,
-    title: "Bài kiểm tra Module 3",
-    score: 65,
-    maxScore: 100,
-    attempts: 3,
-    lastAttempt: "28/03/2025",
-    timeSpent: "32 phút",
-    status: "failed",
-  },
-]
-
-const lessonProgress = [
-  { id: 1, title: "Giới thiệu về Python", completed: true, timeSpent: "45 phút", completedDate: "16/03/2025" },
-  { id: 2, title: "Cài đặt môi trường", completed: true, timeSpent: "30 phút", completedDate: "17/03/2025" },
-  { id: 3, title: "Biến và kiểu dữ liệu", completed: true, timeSpent: "1 giờ 15 phút", completedDate: "18/03/2025" },
-  { id: 4, title: "Vòng lặp và điều kiện", completed: false, timeSpent: "20 phút", completedDate: null },
-]
+import { useStudentEnrollmentDetail } from "@/lib/hooks/useStudentEnrollmentDetail"
+import { format } from "date-fns"
+import { vi } from "date-fns/locale"
 
 export default function StudentDetailPage({ params }: { params: { id: string; studentId: string } }) {
+  const courseId = parseInt(params.id)
+  const studentId = parseInt(params.studentId)
+  
+  const { data, loading, error, refetch } = useStudentEnrollmentDetail(courseId, studentId)
+  const { enrollment, quizResults, stats } = data
+
+  if (loading) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Chi tiết học viên" />
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Đang tải thông tin học viên...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !enrollment) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Chi tiết học viên" />
+        <div className="flex-1 p-6">
+          <div className="mx-auto max-w-6xl">
+            <Button variant="ghost" className="mb-6" asChild>
+              <Link href={`/authorized/lms/app/lecturer/courses/${params.id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Quay lại
+              </Link>
+            </Button>
+
+            <Card className="border-destructive">
+              <CardContent className="p-6 flex items-center gap-4">
+                <AlertCircle className="h-8 w-8 text-destructive" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-destructive mb-2">Lỗi tải dữ liệu</h3>
+                  <p className="text-sm text-muted-foreground">{error || 'Không tìm thấy thông tin học viên'}</p>
+                </div>
+                <Button onClick={refetch} variant="outline">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Thử lại
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Format dates
+  const enrolledDate = enrollment.enrolledAt 
+    ? format(new Date(enrollment.enrolledAt), "dd/MM/yyyy", { locale: vi })
+    : "N/A"
+
+  // Group quiz results by quizId to get best attempts
+  const quizResultsByQuiz = quizResults.reduce((acc, result) => {
+    if (!acc[result.quizId]) {
+      acc[result.quizId] = []
+    }
+    acc[result.quizId].push(result)
+    return acc
+  }, {} as Record<number, typeof quizResults>)
+
+  // Get best result for each quiz
+  const bestQuizResults = Object.entries(quizResultsByQuiz).map(([quizId, attempts]) => {
+    const bestAttempt = attempts.reduce((best, current) => 
+      current.score > best.score ? current : best
+    )
+    const allAttempts = attempts.sort((a, b) => 
+      new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime()
+    )
+    return {
+      ...bestAttempt,
+      attempts: attempts.length,
+      allAttempts,
+    }
+  })
+
   return (
     <div className="flex flex-col">
       <Header title="Chi tiết học viên" />
@@ -81,29 +115,40 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
                 <div className="flex items-center gap-4">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src="/placeholder.svg?height=80&width=80" />
-                    <AvatarFallback className="text-2xl">{studentData.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-2xl">
+                      {enrollment.studentName ? enrollment.studentName.charAt(0).toUpperCase() : 'S'}
+                    </AvatarFallback>
                   </Avatar>
 
                   <div>
-                    <h1 className="text-2xl font-bold">{studentData.name}</h1>
+                    <h1 className="text-2xl font-bold">
+                      {enrollment.studentName || `Học viên #${studentId}`}
+                    </h1>
                     <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        {studentData.email}
-                      </div>
+                      {enrollment.studentEmail && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          {enrollment.studentEmail}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        Đăng ký: {studentData.enrolledDate}
+                        Đăng ký: {enrolledDate}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Hoạt động: {studentData.lastActive}
+                        <Badge variant={enrollment.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                          {enrollment.status === 'ACTIVE' ? 'Đang học' : 
+                           enrollment.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
+                        </Badge>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <Button>Gửi tin nhắn</Button>
+                <Button onClick={refetch} variant="outline" size="sm">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Làm mới
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -115,11 +160,11 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Tiến độ</p>
-                    <p className="mt-2 text-3xl font-bold">{studentData.progress}%</p>
+                    <p className="mt-2 text-3xl font-bold">{enrollment.progress || 0}%</p>
                   </div>
                   <TrendingUp className="h-10 w-10 text-primary opacity-40" />
                 </div>
-                <Progress value={studentData.progress} className="mt-4" />
+                <Progress value={enrollment.progress || 0} className="mt-4" />
               </CardContent>
             </Card>
 
@@ -127,13 +172,16 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Bài học</p>
+                    <p className="text-sm text-muted-foreground">Bài kiểm tra</p>
                     <p className="mt-2 text-3xl font-bold">
-                      {studentData.completedLessons}/{studentData.totalLessons}
+                      {stats.completedQuizzes}/{stats.totalQuizzes}
                     </p>
                   </div>
                   <Award className="h-10 w-10 text-success opacity-40" />
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Đã hoàn thành {stats.completedQuizzes} bài
+                </p>
               </CardContent>
             </Card>
 
@@ -141,11 +189,14 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Thời gian học</p>
-                    <p className="mt-2 text-2xl font-bold">{studentData.timeSpent}</p>
+                    <p className="text-sm text-muted-foreground">Tổng lượt làm</p>
+                    <p className="mt-2 text-3xl font-bold">{stats.totalAttempts}</p>
                   </div>
                   <Clock className="h-10 w-10 text-blue-500 opacity-40" />
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Trung bình {stats.totalQuizzes > 0 ? (stats.totalAttempts / stats.totalQuizzes).toFixed(1) : 0} lần/bài
+                </p>
               </CardContent>
             </Card>
 
@@ -155,11 +206,14 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
                   <div>
                     <p className="text-sm text-muted-foreground">Điểm TB</p>
                     <p className="mt-2 text-3xl font-bold">
-                      {(quizResults.reduce((acc, q) => acc + q.score, 0) / quizResults.length).toFixed(0)}
+                      {stats.averageScore.toFixed(0)}
                     </p>
                   </div>
                   <Award className="h-10 w-10 text-warning opacity-40" />
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Đạt: {stats.passedQuizzes} | Chưa đạt: {stats.failedQuizzes}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -168,100 +222,98 @@ export default function StudentDetailPage({ params }: { params: { id: string; st
           <Tabs defaultValue="quizzes" className="space-y-6">
             <TabsList>
               <TabsTrigger value="quizzes">Kết quả bài kiểm tra</TabsTrigger>
-              <TabsTrigger value="lessons">Tiến độ bài học</TabsTrigger>
             </TabsList>
 
             <TabsContent value="quizzes">
               <Card>
                 <CardHeader>
-                  <CardTitle>Kết quả bài kiểm tra</CardTitle>
+                  <CardTitle>Kết quả bài kiểm tra ({bestQuizResults.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {quizResults.map((quiz) => (
-                      <div key={quiz.id} className="rounded-lg border p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <h3 className="font-semibold">{quiz.title}</h3>
-                              <Badge variant={quiz.status === "passed" ? "default" : "destructive"}>
-                                {quiz.status === "passed" ? "Đạt" : "Chưa đạt"}
-                              </Badge>
+                  {bestQuizResults.length === 0 ? (
+                    <div className="text-center py-12">
+                      <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Học viên chưa làm bài kiểm tra nào</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {bestQuizResults.map((quizResult) => {
+                        const latestAttempt = quizResult.allAttempts[0]
+                        const takenDate = latestAttempt.takenAt 
+                          ? format(new Date(latestAttempt.takenAt), "dd/MM/yyyy HH:mm", { locale: vi })
+                          : "N/A"
+
+                        return (
+                          <div key={quizResult.quizId} className="rounded-lg border p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3">
+                                  <h3 className="font-semibold">{quizResult.quizTitle || `Bài kiểm tra #${quizResult.quizId}`}</h3>
+                                  <Badge variant={quizResult.isPassed ? "default" : "destructive"}>
+                                    {quizResult.isPassed ? "Đạt" : "Chưa đạt"}
+                                  </Badge>
+                                </div>
+
+                                <div className="mt-3 grid gap-4 md:grid-cols-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Điểm cao nhất</p>
+                                    <p className="text-lg font-bold">
+                                      {quizResult.score.toFixed(1)}/100
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Số lần làm</p>
+                                    <p className="text-lg font-bold">{quizResult.attempts}</p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Câu đúng</p>
+                                    <p className="text-lg font-bold">
+                                      {quizResult.correctAnswers}/{quizResult.totalQuestions}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Lần cuối</p>
+                                    <p className="text-sm font-bold">{takenDate}</p>
+                                  </div>
+                                </div>
+
+                                <Progress value={quizResult.score} className="mt-4" />
+                              </div>
+
+                              <Button variant="outline" size="sm" className="ml-4 bg-transparent" asChild>
+                                <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/quizzes/${quizResult.quizId}/results`}>
+                                  Xem chi tiết
+                                </Link>
+                              </Button>
                             </div>
 
-                            <div className="mt-3 grid gap-4 md:grid-cols-4">
-                              <div>
-                                <p className="text-sm text-muted-foreground">Điểm số</p>
-                                <p className="text-lg font-bold">
-                                  {quiz.score}/{quiz.maxScore}
-                                </p>
+                            {/* Show all attempts */}
+                            {quizResult.allAttempts.length > 1 && (
+                              <div className="mt-4 pt-4 border-t">
+                                <p className="text-sm font-semibold mb-2">Lịch sử làm bài:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                  {quizResult.allAttempts.map((attempt, idx) => (
+                                    <div key={attempt.id} className="text-sm p-2 rounded bg-muted">
+                                      <p className="text-xs text-muted-foreground">
+                                        Lần {quizResult.allAttempts.length - idx}
+                                      </p>
+                                      <p className="font-semibold">{attempt.score.toFixed(1)} điểm</p>
+                                      <p className="text-xs">
+                                        {format(new Date(attempt.takenAt), "dd/MM HH:mm", { locale: vi })}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-
-                              <div>
-                                <p className="text-sm text-muted-foreground">Số lần làm</p>
-                                <p className="text-lg font-bold">{quiz.attempts}</p>
-                              </div>
-
-                              <div>
-                                <p className="text-sm text-muted-foreground">Thời gian</p>
-                                <p className="text-lg font-bold">{quiz.timeSpent}</p>
-                              </div>
-
-                              <div>
-                                <p className="text-sm text-muted-foreground">Lần cuối</p>
-                                <p className="text-lg font-bold">{quiz.lastAttempt}</p>
-                              </div>
-                            </div>
-
-                            <Progress value={(quiz.score / quiz.maxScore) * 100} className="mt-4" />
+                            )}
                           </div>
-
-                          <Button variant="outline" size="sm" className="ml-4 bg-transparent">
-                            Xem chi tiết
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="lessons">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tiến độ bài học</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {lessonProgress.map((lesson) => (
-                      <div key={lesson.id} className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${lesson.completed ? "bg-success text-white" : "bg-muted"}`}
-                          >
-                            {lesson.completed ? "✓" : lesson.id}
-                          </div>
-
-                          <div>
-                            <p className="font-semibold">{lesson.title}</p>
-                            <p className="text-sm text-muted-foreground">Thời gian: {lesson.timeSpent}</p>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          {lesson.completed ? (
-                            <>
-                              <Badge>Hoàn thành</Badge>
-                              <p className="mt-1 text-sm text-muted-foreground">{lesson.completedDate}</p>
-                            </>
-                          ) : (
-                            <Badge variant="secondary">Đang học</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

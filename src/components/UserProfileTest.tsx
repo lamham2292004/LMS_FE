@@ -31,7 +31,7 @@ export default function UserProfileTest() {
       
       const response = await fetch(`/api/v1/${userType}/profile`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
         }
       });

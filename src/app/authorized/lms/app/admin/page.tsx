@@ -1,108 +1,79 @@
+"use client"
+
 import { Header } from "@lms/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Badge } from "@lms/components/ui/badge"
 import { Button } from "@lms/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
-import Link from "next/link"
 import {
   Users,
   BookOpen,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   ShoppingCart,
   AlertCircle,
   CheckCircle2,
+  Loader2,
+  RefreshCw,
 } from "lucide-react"
-
-const stats = {
-  totalUsers: 15234,
-  userGrowth: 12.5,
-  totalCourses: 456,
-  courseGrowth: 8.3,
-  totalRevenue: 2450000000,
-  revenueGrowth: 15.7,
-  totalOrders: 3421,
-  orderGrowth: -2.4,
-}
-
-const recentUsers = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    email: "nguyenvana@email.com",
-    role: "student",
-    joinDate: "28/03/2025",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    email: "tranthib@email.com",
-    role: "lecturer",
-    joinDate: "27/03/2025",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    email: "levanc@email.com",
-    role: "student",
-    joinDate: "26/03/2025",
-    status: "pending",
-  },
-]
-
-const recentOrders = [
-  {
-    id: "ORD-001",
-    user: "Nguyễn Văn D",
-    course: "Lập trình Python cơ bản",
-    amount: 1500000,
-    status: "completed",
-    date: "28/03/2025 14:30",
-  },
-  {
-    id: "ORD-002",
-    user: "Trần Thị E",
-    course: "Web Development với React",
-    amount: 2000000,
-    status: "completed",
-    date: "28/03/2025 13:15",
-  },
-  {
-    id: "ORD-003",
-    user: "Lê Văn F",
-    course: "Data Science với Python",
-    amount: 2500000,
-    status: "pending",
-    date: "28/03/2025 12:00",
-  },
-]
-
-const pendingCourses = [
-  {
-    id: 1,
-    title: "Machine Learning Advanced",
-    lecturer: "Phạm Văn G",
-    submittedDate: "25/03/2025",
-    status: "pending",
-  },
-  {
-    id: 2,
-    title: "DevOps Fundamentals",
-    lecturer: "Hoàng Thị H",
-    submittedDate: "24/03/2025",
-    status: "pending",
-  },
-]
+import Link from "next/link"
+import { useAdminDashboard } from "@/lib/hooks/useAdminDashboard"
+import { format } from "date-fns"
+import { vi } from "date-fns/locale"
 
 export default function AdminDashboardPage() {
+  const { stats, recentEnrollments, pendingCourses, loading, error, refetch } = useAdminDashboard()
+
+  if (loading) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Bảng điều khiển Admin" />
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Đang tải dữ liệu từ backend...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Bảng điều khiển Admin" />
+        <div className="flex-1 p-6">
+          <Card className="border-destructive">
+            <CardContent className="p-6 flex items-center gap-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive mb-2">Lỗi tải dữ liệu</h3>
+                <p className="text-sm text-muted-foreground">{error}</p>
+              </div>
+              <Button onClick={refetch} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Thử lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col">
       <Header title="Bảng điều khiển Admin" />
 
       <div className="flex-1 p-6">
+        {/* Header with refresh button */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Tổng quan hệ thống</h1>
+            <p className="text-muted-foreground">Dữ liệu từ LMS Backend</p>
+          </div>
+          <Button onClick={refetch} variant="outline" size="lg">
+            <RefreshCw className="h-5 w-5" />
+          </Button>
+        </div>
+
         {/* Stats Grid */}
         <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -110,12 +81,10 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Tổng người dùng</p>
-                  <p className="mt-2 text-3xl font-bold">{stats.totalUsers.toLocaleString()}</p>
-                  <div className="mt-2 flex items-center gap-1 text-sm">
-                    <TrendingUp className="h-4 w-4 text-success" />
-                    <span className="font-semibold text-success">+{stats.userGrowth}%</span>
-                    <span className="text-muted-foreground">so với tháng trước</span>
-                  </div>
+                  <p className="mt-2 text-3xl font-bold">{stats.totalStudents.toLocaleString()}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {stats.totalEnrollments} lượt đăng ký
+                  </p>
                 </div>
                 <Users className="h-12 w-12 text-primary opacity-40" />
               </div>
@@ -128,10 +97,9 @@ export default function AdminDashboardPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Tổng khóa học</p>
                   <p className="mt-2 text-3xl font-bold">{stats.totalCourses}</p>
-                  <div className="mt-2 flex items-center gap-1 text-sm">
-                    <TrendingUp className="h-4 w-4 text-success" />
-                    <span className="font-semibold text-success">+{stats.courseGrowth}%</span>
-                    <span className="text-muted-foreground">so với tháng trước</span>
+                  <div className="mt-2 flex items-center gap-2 text-xs">
+                    <Badge variant="default" className="text-xs">{stats.approvedCoursesCount} Đã duyệt</Badge>
+                    <Badge variant="secondary" className="text-xs">{stats.pendingCoursesCount} Chờ duyệt</Badge>
                   </div>
                 </div>
                 <BookOpen className="h-12 w-12 text-blue-500 opacity-40" />
@@ -144,12 +112,14 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Doanh thu</p>
-                  <p className="mt-2 text-3xl font-bold">{(stats.totalRevenue / 1000000000).toFixed(1)}B</p>
-                  <div className="mt-2 flex items-center gap-1 text-sm">
-                    <TrendingUp className="h-4 w-4 text-success" />
-                    <span className="font-semibold text-success">+{stats.revenueGrowth}%</span>
-                    <span className="text-muted-foreground">so với tháng trước</span>
-                  </div>
+                  <p className="mt-2 text-3xl font-bold">
+                    {stats.totalRevenue >= 1000000000 
+                      ? `${(stats.totalRevenue / 1000000000).toFixed(1)}B`
+                      : `${(stats.totalRevenue / 1000000).toFixed(1)}M`}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {stats.totalRevenue.toLocaleString()}đ
+                  </p>
                 </div>
                 <DollarSign className="h-12 w-12 text-success opacity-40" />
               </div>
@@ -160,13 +130,11 @@ export default function AdminDashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Đơn hàng</p>
-                  <p className="mt-2 text-3xl font-bold">{stats.totalOrders.toLocaleString()}</p>
-                  <div className="mt-2 flex items-center gap-1 text-sm">
-                    <TrendingDown className="h-4 w-4 text-destructive" />
-                    <span className="font-semibold text-destructive">{stats.orderGrowth}%</span>
-                    <span className="text-muted-foreground">so với tháng trước</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Đăng ký</p>
+                  <p className="mt-2 text-3xl font-bold">{stats.totalEnrollments.toLocaleString()}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Tổng lượt đăng ký khóa học
+                  </p>
                 </div>
                 <ShoppingCart className="h-12 w-12 text-warning opacity-40" />
               </div>
@@ -175,127 +143,103 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Recent Users */}
+          {/* Recent Enrollments */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Người dùng mới</CardTitle>
-                <Button variant="outline" size="sm">
-                  <Link href={`/authorized/lms/app/admin/users`}>
-                            Xem tất cả
-                  </Link>
+                <CardTitle>Đăng ký gần đây</CardTitle>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/authorized/lms/app/admin/courses">Xem tất cả</Link>
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-
-                      <div>
-                        <p className="font-semibold">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <Badge variant={user.role === "lecturer" ? "default" : "secondary"}>
-                          {user.role === "student" ? "Học viên" : "Giảng viên"}
+              {recentEnrollments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Chưa có đăng ký nào</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentEnrollments.map((enrollment) => (
+                    <div key={enrollment.id} className="rounded-lg border p-4">
+                      <div className="mb-2 flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold">{enrollment.courseName}</p>
+                          <p className="text-sm text-muted-foreground">{enrollment.studentName}</p>
+                        </div>
+                        <Badge variant={enrollment.status === "ACTIVE" ? "default" : "secondary"}>
+                          {enrollment.status === "ACTIVE" ? "Đang học" : 
+                           enrollment.status === "COMPLETED" ? "Hoàn thành" : "Đã hủy"}
                         </Badge>
-                        <p className="mt-1 text-xs text-muted-foreground">{user.joinDate}</p>
                       </div>
 
-                      <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                        {user.status === "active" ? "Hoạt động" : "Chờ duyệt"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Orders */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Đơn hàng gần đây</CardTitle>
-                <Button variant="outline" size="sm">
-                  Xem tất cả
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="rounded-lg border p-4">
-                    <div className="mb-2 flex items-start justify-between">
-                      <div>
-                        <p className="font-semibold">{order.course}</p>
-                        <p className="text-sm text-muted-foreground">{order.user}</p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">ID: {enrollment.id}</span>
+                        <span className="font-semibold text-primary">{enrollment.coursePrice.toLocaleString()}đ</span>
                       </div>
-                      <Badge variant={order.status === "completed" ? "default" : "secondary"}>
-                        {order.status === "completed" ? "Hoàn thành" : "Chờ xử lý"}
-                      </Badge>
-                    </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{order.id}</span>
-                      <span className="font-semibold text-primary">{order.amount.toLocaleString()}đ</span>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {enrollment.enrolledAt 
+                          ? format(new Date(enrollment.enrolledAt), "dd/MM/yyyy HH:mm", { locale: vi })
+                          : "N/A"}
+                      </p>
                     </div>
-
-                    <p className="mt-2 text-xs text-muted-foreground">{order.date}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Pending Courses */}
-          <Card className="lg:col-span-2">
+          <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CardTitle>Khóa học chờ duyệt</CardTitle>
                   <Badge variant="destructive">{pendingCourses.length}</Badge>
                 </div>
-                <Button variant="outline" size="sm">
-                  Xem tất cả
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/authorized/lms/app/admin/courses">Xem tất cả</Link>
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {pendingCourses.map((course) => (
-                  <div key={course.id} className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="flex items-center gap-4">
-                      <AlertCircle className="h-10 w-10 text-warning" />
+              {pendingCourses.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle2 className="h-12 w-12 text-success mx-auto mb-2" />
+                  <p className="text-muted-foreground">Không có khóa học chờ duyệt</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingCourses.map((course) => (
+                    <div key={course.id} className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="flex items-center gap-4">
+                        <AlertCircle className="h-10 w-10 text-warning" />
 
-                      <div>
-                        <p className="font-semibold">{course.title}</p>
-                        <p className="text-sm text-muted-foreground">Giảng viên: {course.lecturer}</p>
-                        <p className="text-xs text-muted-foreground">Gửi lúc: {course.submittedDate}</p>
+                        <div>
+                          <p className="font-semibold">{course.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Teacher ID: {course.teacherId}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Gửi lúc: {course.createdAt 
+                              ? format(new Date(course.createdAt), "dd/MM/yyyy HH:mm", { locale: vi })
+                              : "N/A"}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Xem chi tiết
-                      </Button>
-                      <Button size="sm">
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Phê duyệt
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/authorized/lms/app/admin/courses/${course.id}/preview`}>
+                          Xem chi tiết
+                        </Link>
                       </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

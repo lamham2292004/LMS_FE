@@ -1,91 +1,77 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Badge } from "@lms/components/ui/badge"
 import { Button } from "@lms/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
 import { Progress } from "@lms/components/ui/progress"
-import { Trophy, Clock, CheckCircle2, XCircle, Eye, Calendar } from "lucide-react"
+import { Trophy, Clock, CheckCircle2, XCircle, Eye, Calendar, Loader2, RefreshCw, AlertCircle } from "lucide-react"
 import Link from "next/link"
-
-// Mock data - trong thực tế sẽ fetch từ API
-const quizResults = [
-  {
-    id: 1,
-    courseId: 1,
-    courseName: "Lập trình Web với React & Next.js",
-    quizTitle: "Kiểm tra giữa khóa - React Hooks",
-    score: 85,
-    totalQuestions: 20,
-    correctAnswers: 17,
-    timeSpent: "25 phút",
-    completedAt: "2024-01-15T10:30:00",
-    status: "passed",
-    passingScore: 70,
-  },
-  {
-    id: 2,
-    courseId: 1,
-    courseName: "Lập trình Web với React & Next.js",
-    quizTitle: "Bài kiểm tra cuối khóa",
-    score: 92,
-    totalQuestions: 30,
-    correctAnswers: 28,
-    timeSpent: "40 phút",
-    completedAt: "2024-01-20T14:15:00",
-    status: "passed",
-    passingScore: 80,
-  },
-  {
-    id: 3,
-    courseId: 2,
-    courseName: "Python cho Data Science",
-    quizTitle: "Quiz 1: Python Basics",
-    score: 65,
-    totalQuestions: 15,
-    correctAnswers: 10,
-    timeSpent: "18 phút",
-    completedAt: "2024-01-18T09:20:00",
-    status: "failed",
-    passingScore: 70,
-  },
-  {
-    id: 4,
-    courseId: 3,
-    courseName: "Machine Learning cơ bản",
-    quizTitle: "Kiểm tra chương 1",
-    score: 78,
-    totalQuestions: 25,
-    correctAnswers: 20,
-    timeSpent: "35 phút",
-    completedAt: "2024-01-22T16:45:00",
-    status: "passed",
-    passingScore: 75,
-  },
-]
+import { useMyAllQuizResults } from "@/lib/hooks/useLms"
+import { Header } from "@lms/components/header"
 
 export default function TestsPage() {
   const [filter, setFilter] = useState<"all" | "passed" | "failed">("all")
+  const { results, loading, error, fetchResults } = useMyAllQuizResults()
 
-  const filteredResults = quizResults.filter((result) => {
+  useEffect(() => {
+    fetchResults()
+  }, [fetchResults])
+
+  const filteredResults = results.filter((result) => {
     if (filter === "all") return true
-    return result.status === filter
+    if (filter === "passed") return result.isPassed
+    if (filter === "failed") return !result.isPassed
+    return true
   })
 
   const stats = {
-    total: quizResults.length,
-    passed: quizResults.filter((r) => r.status === "passed").length,
-    failed: quizResults.filter((r) => r.status === "failed").length,
-    avgScore: Math.round(quizResults.reduce((sum, r) => sum + r.score, 0) / quizResults.length),
+    total: results.length,
+    passed: results.filter((r) => r.isPassed).length,
+    failed: results.filter((r) => !r.isPassed).length,
+    avgScore: results.length > 0 
+      ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length)
+      : 0,
+  }
+
+  // Loading state
+  if (loading && results.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Đang tải kết quả...</p>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-lg font-medium mb-2">Không thể tải kết quả bài kiểm tra</p>
+        <p className="text-sm text-muted-foreground mb-4">{error.message || 'Đã có lỗi xảy ra'}</p>
+        <Button onClick={() => fetchResults()}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Thử lại
+        </Button>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Bài kiểm tra</h1>
-        <p className="text-muted-foreground">Xem lại kết quả các bài kiểm tra đã hoàn thành</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Bài kiểm tra</h1>
+          <p className="text-muted-foreground">Xem lại kết quả các bài kiểm tra đã hoàn thành</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => fetchResults()} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Làm mới
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -159,11 +145,12 @@ export default function TestsPage() {
                     <div className="space-y-1">
                       <CardTitle className="text-lg">{result.quizTitle}</CardTitle>
                       <CardDescription className="flex items-center gap-2">
-                        <span>{result.courseName}</span>
+                        <span>Lần thử {result.attemptNumber}</span>
+                        {result.studentName && <span>• {result.studentName}</span>}
                       </CardDescription>
                     </div>
-                    <Badge variant={result.status === "passed" ? "default" : "destructive"} className="ml-2">
-                      {result.status === "passed" ? "Đạt" : "Chưa đạt"}
+                    <Badge variant={result.isPassed ? "default" : "destructive"} className="ml-2">
+                      {result.isPassed ? "Đạt" : "Chưa đạt"}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -178,20 +165,32 @@ export default function TestsPage() {
                         </span>
                       </div>
                       <Progress value={result.score} className="h-2" />
-                      <p className="text-xs text-muted-foreground">Điểm đạt: {result.passingScore}% trở lên</p>
                     </div>
 
                     {/* Meta Info */}
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-4 w-4" />
-                        <span>{result.timeSpent}</span>
+                        <span>{result.timeTaken} phút</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(result.completedAt).toLocaleDateString("vi-VN")}</span>
+                        <span>{new Date(result.takenAt).toLocaleDateString("vi-VN", {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</span>
                       </div>
                     </div>
+
+                    {/* Feedback */}
+                    {result.feedback && (
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <p className="text-sm text-muted-foreground">{result.feedback}</p>
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
@@ -201,11 +200,6 @@ export default function TestsPage() {
                           Xem chi tiết
                         </Link>
                       </Button>
-                      {result.status === "failed" && (
-                        <Button size="sm" asChild>
-                          <Link href={`/authorized/lms/app/student/courses/${result.courseId}/learn`}>Làm lại</Link>
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -217,3 +211,4 @@ export default function TestsPage() {
     </div>
   )
 }
+

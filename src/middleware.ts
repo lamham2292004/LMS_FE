@@ -7,28 +7,32 @@ export function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
 
-  // Nếu chưa login → chỉ cho phép vào /login và /register
+  // Nếu chưa login → chỉ cho phép vào /auth/login và /auth/register
   if (
     !token &&
-    !pathname.startsWith("/login") &&
-    !pathname.startsWith("/register")
+    !pathname.startsWith("/auth/login") &&
+    !pathname.startsWith("/auth/register") &&
+    !pathname.startsWith("/test-") && // Allow test pages
+    !pathname.startsWith("/courses-demo") && // Allow demo pages
+    !pathname.startsWith("/debug-") && // Allow debug pages
+    pathname !== "/" // Allow home page
   ) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
   // Nếu là user nhưng vào admin
-  if (role === "user" && pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  if (role === "user" && pathname.startsWith("/authorized/admin")) {
+    return NextResponse.redirect(new URL("/authorized/dashboard", req.url));
   }
 
   // Nếu là admin nhưng vào dashboard user
-  if (role === "admin" && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+  if (role === "admin" && pathname.startsWith("/authorized/dashboard") && !pathname.startsWith("/authorized/admin")) {
+    return NextResponse.redirect(new URL("/authorized/admin/dashboard", req.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/register", "/authorized/:path*"],
+  matcher: ["/authorized/:path*"],
 };

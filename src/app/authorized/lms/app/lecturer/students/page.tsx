@@ -1,68 +1,181 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@lms/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Input } from "@lms/components/ui/input"
 import { Badge } from "@lms/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@lms/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@lms/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
-import { Users, Search, Trophy, Clock, TrendingUp } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@lms/components/ui/select"
+import { Users, Search, Trophy, Clock, TrendingUp, BookOpen, AlertCircle } from "lucide-react"
+import { useEnrollments, useLecturerCourses } from "@/lib/hooks/useLms"
+import type { EnrollmentResponse } from "@/lib/lms-api-client"
+
+// Student data aggregated from enrollments
+interface StudentData {
+  id: number
+  name: string
+  email: string
+  enrolledCourses: number
+  completedCourses: number
+  activeCourses: number
+  progress: number
+  lastActive: string
+  enrollments: EnrollmentResponse[]
+}
 
 export default function LecturerStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCourse, setSelectedCourse] = useState<string>("all")
+  
+  const { enrollments, loading: enrollmentsLoading, error: enrollmentsError, fetchEnrollments } = useEnrollments()
+  const { courses, loading: coursesLoading, fetchCourses } = useLecturerCourses()
 
-  // Mock data - replace with actual API call
-  const students = [
-    {
-      id: 1,
-      name: "Nguyễn Văn An",
-      email: "an.nguyen@email.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-      enrolledCourses: 3,
-      completedCourses: 1,
-      totalProgress: 65,
-      totalTrophies: 12,
-      totalTime: 45,
-      status: "active",
-      lastActive: "2 giờ trước",
-    },
-    {
-      id: 2,
-      name: "Trần Thị Bình",
-      email: "binh.tran@email.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-      enrolledCourses: 2,
-      completedCourses: 2,
-      totalProgress: 100,
-      totalTrophies: 24,
-      totalTime: 68,
-      status: "active",
-      lastActive: "1 ngày trước",
-    },
-    {
-      id: 3,
-      name: "Lê Minh Châu",
-      email: "chau.le@email.com",
-      avatar: "/placeholder.svg?height=40&width=40",
-      enrolledCourses: 1,
-      completedCourses: 0,
-      totalProgress: 25,
-      totalTrophies: 3,
-      totalTime: 12,
-      status: "inactive",
-      lastActive: "7 ngày trước",
-    },
-  ]
+  useEffect(() => {
+    fetchEnrollments()
+    fetchCourses()
+  }, [fetchEnrollments, fetchCourses])
 
-  const activeStudents = students.filter((s) => s.status === "active")
-  const inactiveStudents = students.filter((s) => s.status === "inactive")
+  // Aggregate students from enrollments
+  const students = useMemo<StudentData[]>(() => {
+    if (!enrollments || enrollments.length === 0) return []
 
-  const filteredStudents = (studentList: typeof students) => {
-    return studentList.filter(
+    const studentMap = new Map<number, StudentData>()
+
+    enrollments.forEach((enrollment: EnrollmentResponse) => {
+      const studentId = enrollment.studentId
+      
+      if (!studentMap.has(studentId)) {
+        studentMap.set(studentId, {
+          id: studentId,
+          name: enrollment.studentName || `Student ${studentId}`,
+          email: enrollment.studentEmail || "",
+          enrolledCourses: 0,
+          completedCourses: 0,
+          activeCourses: 0,
+          progress: 0,
+          lastActive: enrollment.enrolledAt,
+          enrollments: [],
+        })
+      }
+
+      const student = studentMap.get(studentId)!
+      student.enrollments.push(enrollment)
+      student.enrolledCourses++
+
+      if (enrollment.status === 'COMPLETED') {
+        student.completedCourses++
+      } else if (enrollment.status === 'ACTIVE') {
+        student.activeCourses++
+      }
+
+      // Calculate average progress
+      if (enrollment.progress !== undefined) {
+        student.progress = Math.round(
+          student.enrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / student.enrollments.length
+        )
+      }
+
+      // Update last active
+      if (new Date(enrollment.enrolledAt) > new Date(student.lastActive)) {
+        student.lastActive = enrollment.enrolledAt
+      }
+    })
+
+    return Array.from(studentMap.values())
+  }, [enrollments])
+
+  // Filter by course
+  const filteredByCourse = useMemo(() => {
+    if (selectedCourse === "all") return students
+
+    const courseId = parseInt(selectedCourse)
+    return students.filter(student => 
+      student.enrollments.some(e => e.courseId === courseId)
+    )
+  }, [students, selectedCourse])
+
+  // Filter by search query
+  const filteredStudents = useMemo(() => {
+    return filteredByCourse.filter(
       (student) =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.email.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+  }, [filteredByCourse, searchQuery])
+
+  // Stats
+  const stats = useMemo(() => {
+    const totalStudents = students.length
+    const activeStudents = students.filter(s => s.activeCourses > 0).length
+    const avgProgress = students.length > 0
+      ? Math.round(students.reduce((sum, s) => sum + s.progress, 0) / students.length)
+      : 0
+    const totalCompleted = students.reduce((sum, s) => sum + s.completedCourses, 0)
+    
+    return { totalStudents, activeStudents, avgProgress, totalCompleted }
+  }, [students])
+
+  const formatLastActive = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    
+    if (diffInDays === 0) return "Hôm nay"
+    if (diffInDays === 1) return "Hôm qua"
+    if (diffInDays < 7) return `${diffInDays} ngày trước`
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} tuần trước`
+    return date.toLocaleDateString("vi-VN")
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
+  }
+
+  if (enrollmentsLoading || coursesLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Đang tải danh sách học viên...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (enrollmentsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex mb-4 gap-2">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-red-500">Không thể tải dữ liệu</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {enrollmentsError?.message || "Vui lòng thử lại sau"}
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => fetchEnrollments()} className="w-full">
+              Thử lại
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -83,8 +196,8 @@ export default function LecturerStudentsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{students.length}</div>
-              <p className="text-xs text-muted-foreground">{activeStudents.length} đang hoạt động</p>
+              <div className="text-2xl font-bold">{stats.totalStudents}</div>
+              <p className="text-xs text-muted-foreground">{stats.activeStudents} đang hoạt động</p>
             </CardContent>
           </Card>
 
@@ -94,9 +207,7 @@ export default function LecturerStudentsPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {Math.round(students.reduce((sum, s) => sum + s.totalProgress, 0) / students.length)}%
-              </div>
+              <div className="text-2xl font-bold">{stats.avgProgress}%</div>
               <p className="text-xs text-muted-foreground">Trung bình tất cả học viên</p>
             </CardContent>
           </Card>
@@ -107,238 +218,128 @@ export default function LecturerStudentsPage() {
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{students.reduce((sum, s) => sum + s.completedCourses, 0)}</div>
+              <div className="text-2xl font-bold">{stats.totalCompleted}</div>
               <p className="text-xs text-muted-foreground">Khóa học đã hoàn thành</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Thời gian học</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Khóa học</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{students.reduce((sum, s) => sum + s.totalTime, 0)}h</div>
-              <p className="text-xs text-muted-foreground">Tổng thời gian học</p>
+              <div className="text-2xl font-bold">{courses?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">Khóa học của bạn</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Tìm kiếm học viên theo tên hoặc email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tìm kiếm học viên theo tên hoặc email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+            <SelectTrigger className="w-full sm:w-[250px]">
+              <SelectValue placeholder="Tất cả khóa học" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả khóa học</SelectItem>
+              {courses && courses.map((course) => (
+                <SelectItem key={course.id} value={course.id.toString()}>
+                  {course.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Students Tabs */}
-        <Tabs defaultValue="active" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="active">Đang hoạt động ({activeStudents.length})</TabsTrigger>
-            <TabsTrigger value="inactive">Không hoạt động ({inactiveStudents.length})</TabsTrigger>
-            <TabsTrigger value="all">Tất cả ({students.length})</TabsTrigger>
-          </TabsList>
+        {/* Students List */}
+        {filteredStudents.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Users className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {searchQuery || selectedCourse !== "all" 
+                  ? "Không tìm thấy học viên nào" 
+                  : "Chưa có học viên nào đăng ký khóa học của bạn"}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {filteredStudents.map((student) => (
+              <Card key={student.id}>
+                <CardContent className="flex items-center gap-6 p-6">
+                  <Avatar className="h-16 w-16">
+                    <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
+                      {getInitials(student.name)}
+                    </AvatarFallback>
+                  </Avatar>
 
-          <TabsContent value="active" className="space-y-4">
-            {filteredStudents(activeStudents).length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Không tìm thấy học viên nào</p>
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{student.name}</h3>
+                        <p className="text-sm text-muted-foreground">{student.email || "Chưa có email"}</p>
+                      </div>
+                      <Badge variant={student.activeCourses > 0 ? "default" : "secondary"}>
+                        {student.activeCourses > 0 ? "Đang học" : "Không hoạt động"}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Khóa học</p>
+                        <p className="font-semibold">{student.enrolledCourses}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Đang học</p>
+                        <p className="font-semibold text-blue-600">{student.activeCourses}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Hoàn thành</p>
+                        <p className="font-semibold text-green-600">{student.completedCourses}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Tiến độ TB</p>
+                        <p className="font-semibold">{student.progress}%</p>
+                      </div>
+                    </div>
+
+                    {/* Course enrollments */}
+                    <div className="flex flex-wrap gap-2">
+                      {student.enrollments.slice(0, 3).map((enrollment) => (
+                        <Badge key={enrollment.id} variant="outline" className="text-xs">
+                          {enrollment.courseName} • {enrollment.status}
+                        </Badge>
+                      ))}
+                      {student.enrollments.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{student.enrollments.length - 3} khác
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Đăng ký lần cuối: {formatLastActive(student.lastActive)}
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredStudents(activeStudents).map((student) => (
-                  <Card key={student.id}>
-                    <CardContent className="flex items-center gap-6 p-6">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={student.avatar || "/placeholder.svg"} alt={student.name} />
-                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg">{student.name}</h3>
-                            <p className="text-sm text-muted-foreground">{student.email}</p>
-                          </div>
-                          <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                            {student.status === "active" ? "Đang hoạt động" : "Không hoạt động"}
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-5 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Khóa học</p>
-                            <p className="font-semibold">{student.enrolledCourses}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Hoàn thành</p>
-                            <p className="font-semibold">{student.completedCourses}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Tiến độ</p>
-                            <p className="font-semibold">{student.totalProgress}%</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Cúp</p>
-                            <p className="font-semibold">{student.totalTrophies}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Thời gian</p>
-                            <p className="font-semibold">{student.totalTime}h</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground">Hoạt động lần cuối: {student.lastActive}</p>
-                          <Button variant="outline" size="sm">
-                            Xem chi tiết
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="inactive" className="space-y-4">
-            {filteredStudents(inactiveStudents).length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Không có học viên không hoạt động</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredStudents(inactiveStudents).map((student) => (
-                  <Card key={student.id}>
-                    <CardContent className="flex items-center gap-6 p-6">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={student.avatar || "/placeholder.svg"} alt={student.name} />
-                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg">{student.name}</h3>
-                            <p className="text-sm text-muted-foreground">{student.email}</p>
-                          </div>
-                          <Badge variant="secondary">Không hoạt động</Badge>
-                        </div>
-
-                        <div className="grid grid-cols-5 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Khóa học</p>
-                            <p className="font-semibold">{student.enrolledCourses}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Hoàn thành</p>
-                            <p className="font-semibold">{student.completedCourses}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Tiến độ</p>
-                            <p className="font-semibold">{student.totalProgress}%</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Cúp</p>
-                            <p className="font-semibold">{student.totalTrophies}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Thời gian</p>
-                            <p className="font-semibold">{student.totalTime}h</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground">Hoạt động lần cuối: {student.lastActive}</p>
-                          <Button variant="outline" size="sm">
-                            Xem chi tiết
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="all" className="space-y-4">
-            {filteredStudents(students).length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Không tìm thấy học viên nào</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredStudents(students).map((student) => (
-                  <Card key={student.id}>
-                    <CardContent className="flex items-center gap-6 p-6">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={student.avatar || "/placeholder.svg"} alt={student.name} />
-                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg">{student.name}</h3>
-                            <p className="text-sm text-muted-foreground">{student.email}</p>
-                          </div>
-                          <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                            {student.status === "active" ? "Đang hoạt động" : "Không hoạt động"}
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-5 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Khóa học</p>
-                            <p className="font-semibold">{student.enrolledCourses}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Hoàn thành</p>
-                            <p className="font-semibold">{student.completedCourses}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Tiến độ</p>
-                            <p className="font-semibold">{student.totalProgress}%</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Cúp</p>
-                            <p className="font-semibold">{student.totalTrophies}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Thời gian</p>
-                            <p className="font-semibold">{student.totalTime}h</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground">Hoạt động lần cuối: {student.lastActive}</p>
-                          <Button variant="outline" size="sm">
-                            Xem chi tiết
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

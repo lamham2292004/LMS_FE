@@ -17,7 +17,7 @@ class ApiClient {
 
   private getToken(): string | null {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem('token')
+    return localStorage.getItem('auth_token')  // Fixed: use 'auth_token' key
   }
 
   private async request<T>(
@@ -26,9 +26,9 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const token = this.getToken()
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (token) {

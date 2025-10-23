@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Token Debugger</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+        .token-info {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .copy-btn {
+            background: #2196F3;
+        }
+        .copy-btn:hover {
+            background: #0b7dda;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .field {
+            margin: 8px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+        .label {
+            font-weight: bold;
+            color: #666;
+            display: inline-block;
+            min-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 JWT Token Debugger</h1>
+        
+        <div class="section">
+            <h2>📋 Token từ LocalStorage</h2>
+            <button onclick="loadToken()">🔄 Tải Token</button>
+            <button class="copy-btn" onclick="copyToken()">📋 Copy Token</button>
+            <div id="tokenDisplay" class="token-info">
+                <em>Click "Tải Token" để xem...</em>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Token Payload (Decoded)</h2>
+            <div id="payloadDisplay">
+                <em>Chưa có dữ liệu...</em>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✅ User Information</h2>
+            <div id="userInfo">
+                <em>Chưa có dữ liệu...</em>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>⏰ Token Expiry</h2>
+            <div id="expiryInfo">
+                <em>Chưa có dữ liệu...</em>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 Debug Info</h2>
+            <div id="debugInfo">
+                <em>Chưa có dữ liệu...</em>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadToken() {
+            try {
+                const token = localStorage.getItem('auth_token');
+                
+                if (!token) {
+                    document.getElementById('tokenDisplay').innerHTML = 
+                        '<span class="error">❌ Không tìm thấy token trong localStorage</span>';
+                    return;
+                }
+
+                // Display token
+                document.getElementById('tokenDisplay').innerHTML = 
+                    `<span class="success">✅ Token found!</span><br><br>${token}`;
+
+                // Decode token
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid token format');
+                }
+
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                
+                // Display payload
+                document.getElementById('payloadDisplay').innerHTML = 
+                    '<pre>' + JSON.stringify(payload, null, 2) + '</pre>';
+
+                // Extract user info
+                const userId = payload.sub || payload.userId || payload.user_id;
+                const userType = payload.user_type || payload.userType;
+                const username = payload.username;
+                const email = payload.email;
+                const lecturerCode = payload.lecturerCode;
+                const studentCode = payload.studentCode;
+
+                let userInfoHtml = '';
+                
+                if (userId) {
+                    userInfoHtml += `<div class="field"><span class="label">User ID:</span> <span class="success">${userId}</span></div>`;
+                } else {
+                    userInfoHtml += `<div class="field"><span class="label">User ID:</span> <span class="error">❌ NOT FOUND</span></div>`;
+                }
+
+                if (userType) {
+                    userInfoHtml += `<div class="field"><span class="label">User Type:</span> <span class="success">${userType}</span></div>`;
+                }
+
+                if (username) {
+                    userInfoHtml += `<div class="field"><span class="label">Username:</span> ${username}</div>`;
+                }
+
+                if (email) {
+                    userInfoHtml += `<div class="field"><span class="label">Email:</span> ${email}</div>`;
+                }
+
+                if (lecturerCode) {
+                    userInfoHtml += `<div class="field"><span class="label">Lecturer Code:</span> ${lecturerCode}</div>`;
+                }
+
+                if (studentCode) {
+                    userInfoHtml += `<div class="field"><span class="label">Student Code:</span> ${studentCode}</div>`;
+                }
+
+                document.getElementById('userInfo').innerHTML = userInfoHtml;
+
+                // Check expiry
+                const exp = payload.exp;
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = exp < now;
+                const timeRemaining = exp - now;
+                const expiryDate = new Date(exp * 1000);
+
+                let expiryHtml = '';
+                expiryHtml += `<div class="field"><span class="label">Expires At:</span> ${expiryDate.toLocaleString('vi-VN')}</div>`;
+                
+                if (isExpired) {
+                    expiryHtml += `<div class="field"><span class="label">Status:</span> <span class="error">❌ EXPIRED</span></div>`;
+                    const expiredSince = Math.abs(timeRemaining);
+                    const hours = Math.floor(expiredSince / 3600);
+                    const minutes = Math.floor((expiredSince % 3600) / 60);
+                    expiryHtml += `<div class="field"><span class="label">Expired Since:</span> ${hours}h ${minutes}m ago</div>`;
+                } else {
+                    expiryHtml += `<div class="field"><span class="label">Status:</span> <span class="success">✅ VALID</span></div>`;
+                    const hours = Math.floor(timeRemaining / 3600);
+                    const minutes = Math.floor((timeRemaining % 3600) / 60);
+                    expiryHtml += `<div class="field"><span class="label">Time Remaining:</span> ${hours}h ${minutes}m</div>`;
+                    
+                    if (timeRemaining < 600) {
+                        expiryHtml += `<div class="field"><span class="warning">⚠️ Token sẽ hết hạn trong < 10 phút!</span></div>`;
+                    }
+                }
+
+                document.getElementById('expiryInfo').innerHTML = expiryHtml;
+
+                // Debug info
+                let debugHtml = '';
+                debugHtml += '<div class="field"><strong>Available User ID Fields:</strong></div>';
+                
+                if (payload.sub) {
+                    debugHtml += `<div class="field">✅ <code>sub</code>: ${payload.sub} (JWT Standard)</div>`;
+                } else {
+                    debugHtml += `<div class="field">❌ <code>sub</code>: Not found</div>`;
+                }
+
+                if (payload.userId) {
+                    debugHtml += `<div class="field">✅ <code>userId</code>: ${payload.userId} (camelCase)</div>`;
+                } else {
+                    debugHtml += `<div class="field">❌ <code>userId</code>: Not found</div>`;
+                }
+
+                if (payload.user_id) {
+                    debugHtml += `<div class="field">✅ <code>user_id</code>: ${payload.user_id} (snake_case)</div>`;
+                } else {
+                    debugHtml += `<div class="field">❌ <code>user_id</code>: Not found</div>`;
+                }
+
+                debugHtml += '<br><div class="field"><strong>Available User Type Fields:</strong></div>';
+                
+                if (payload.user_type) {
+                    debugHtml += `<div class="field">✅ <code>user_type</code>: ${payload.user_type} (snake_case)</div>`;
+                } else {
+                    debugHtml += `<div class="field">❌ <code>user_type</code>: Not found</div>`;
+                }
+
+                if (payload.userType) {
+                    debugHtml += `<div class="field">✅ <code>userType</code>: ${payload.userType} (camelCase)</div>`;
+                } else {
+                    debugHtml += `<div class="field">❌ <code>userType</code>: Not found</div>`;
+                }
+
+                debugHtml += '<br><div class="field"><strong>Recommendation:</strong></div>';
+                if (userId && userType) {
+                    debugHtml += `<div class="field"><span class="success">✅ Token hợp lệ và có đủ thông tin cần thiết!</span></div>`;
+                } else {
+                    debugHtml += `<div class="field"><span class="error">❌ Token thiếu thông tin quan trọng!</span></div>`;
+                }
+
+                document.getElementById('debugInfo').innerHTML = debugHtml;
+
+            } catch (error) {
+                document.getElementById('tokenDisplay').innerHTML = 
+                    `<span class="error">❌ Lỗi: ${error.message}</span>`;
+                console.error('Token decode error:', error);
+            }
+        }
+
+        function copyToken() {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                navigator.clipboard.writeText(token).then(() => {
+                    alert('✅ Token đã được copy vào clipboard!');
+                }).catch(err => {
+                    alert('❌ Không thể copy: ' + err.message);
+                });
+            } else {
+                alert('❌ Không có token để copy!');
+            }
+        }
+
+        // Auto load on page load
+        window.onload = function() {
+            if (localStorage.getItem('auth_token')) {
+                loadToken();
+            }
+        };
+    </script>
+</body>
+</html>
+

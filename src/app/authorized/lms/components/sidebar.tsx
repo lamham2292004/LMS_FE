@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, BookOpen, Users, Settings, BarChart3, GraduationCap, UserCheck, FileText, Calendar, MessageSquare } from "lucide-react"
+import { Home, BookOpen, Users, Settings, BarChart3, GraduationCap, UserCheck, FileText, Bell } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@lms/lib/utils"
@@ -12,23 +12,26 @@ interface SidebarProps {
 const menuItems = {
   student: [
     { href: "/authorized/lms/app/student", label: "Tổng quan", icon: Home },
-    { href: "/authorized/lms/app/student/browse", label: "Khám phá", icon: BookOpen },
+    { href: "/authorized/lms/app/student/browse", label: "Khám phá khóa học", icon: BookOpen },
     { href: "/authorized/lms/app/student/courses", label: "Khóa học của tôi", icon: GraduationCap },
     { href: "/authorized/lms/app/student/tests", label: "Bài kiểm tra", icon: FileText },
+    { href: "/student/notifications", icon: Bell, label: "Thông báo" },
     { href: "/authorized/lms/app/student/profile", label: "Hồ sơ", icon: UserCheck },
   ],
   lecturer: [
     { href: "/authorized/lms/app/lecturer", label: "Bảng điều khiển", icon: Home },
     { href: "/authorized/lms/app/lecturer/courses", label: "Quản lý khóa học", icon: BookOpen },
-    { href: "/authorized/lms/app/lecturer/students", label: "Học viên", icon: Users },
+    { href: "/authorized/lms/app/lecturer/students", label: "Quản lý học viên", icon: Users },
+    { href: "/lecturer/notifications", icon: Bell, label: "Thông báo" },
     { href: "/authorized/lms/app/lecturer/profile", label: "Hồ sơ", icon: UserCheck },
   ],
   admin: [
     { href: "/authorized/lms/app/admin", label: "Tổng quan", icon: Home },
-    { href: "/authorized/lms/app/admin/users", label: "Người dùng", icon: Users },
-    { href: "/authorized/lms/app/admin/courses", label: "Khóa học", icon: BookOpen },
-    { href: "/authorized/lms/app/admin/categories", label: "Danh mục", icon: FileText },
-    { href: "/authorized/lms/app/admin/transactions", label: "Giao dịch", icon: BarChart3 },
+    { href: "/authorized/lms/app/admin/users", label: "Quản lý người dùng", icon: Users },
+    { href: "/authorized/lms/app/admin/courses", label: "Quản lý khóa học", icon: BookOpen },
+    { href: "/authorized/lms/app/admin/categories", label: "Quản lý danh mục", icon: FileText },
+    { href: "/admin/notifications", icon: Bell, label: "Thông báo" },
+    { href: "/authorized/lms/app/admin/transactions", label: "Quản lý giao dịch", icon: BarChart3 },
   ],
 }
 

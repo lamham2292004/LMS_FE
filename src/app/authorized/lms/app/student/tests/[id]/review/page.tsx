@@ -1,68 +1,70 @@
 "use client"
 
+import { useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Badge } from "@lms/components/ui/badge"
 import { Button } from "@lms/components/ui/button"
 import { Progress } from "@lms/components/ui/progress"
-import { CheckCircle2, XCircle, Clock, Calendar, ArrowLeft, RotateCcw } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, Calendar, ArrowLeft, AlertCircle } from "lucide-react"
 import Link from "next/link"
-
-// Mock data
-const quizResult = {
-  id: 1,
-  courseId: 1,
-  courseName: "Lập trình Web với React & Next.js",
-  quizTitle: "Kiểm tra giữa khóa - React Hooks",
-  score: 85,
-  totalQuestions: 20,
-  correctAnswers: 17,
-  timeSpent: "25 phút",
-  completedAt: "2024-01-15T10:30:00",
-  status: "passed",
-  passingScore: 70,
-  questions: [
-    {
-      id: 1,
-      question: "useState hook được sử dụng để làm gì?",
-      type: "MULTIPLE_CHOICE",
-      options: ["Quản lý state trong functional component", "Gọi API", "Xử lý side effects", "Tạo context"],
-      userAnswer: 0,
-      correctAnswer: 0,
-      isCorrect: true,
-      explanation: "useState là hook cơ bản để quản lý state trong functional component.",
-    },
-    {
-      id: 2,
-      question: "useEffect chạy sau mỗi lần render?",
-      type: "TRUE_FALSE",
-      userAnswer: true,
-      correctAnswer: true,
-      isCorrect: true,
-      explanation: "Mặc định useEffect chạy sau mỗi lần render, trừ khi có dependency array.",
-    },
-    {
-      id: 3,
-      question: "Hook nào dùng để tối ưu performance?",
-      type: "SHORT_ANSWER",
-      userAnswer: "useMemo",
-      correctAnswer: "useMemo",
-      isCorrect: true,
-      explanation: "useMemo và useCallback đều giúp tối ưu performance.",
-    },
-    {
-      id: 4,
-      question: "Dependency array trong useEffect có tác dụng gì?",
-      type: "MULTIPLE_CHOICE",
-      options: ["Không có tác dụng gì", "Kiểm soát khi nào effect chạy", "Tạo state mới", "Xóa component"],
-      userAnswer: 2,
-      correctAnswer: 1,
-      isCorrect: false,
-      explanation: "Dependency array kiểm soát khi nào effect được chạy lại.",
-    },
-  ],
-}
+import { useQuizResultDetail } from "@/lib/hooks/useLms"
+import { useQuiz } from "@/lib/hooks/useLms"
 
 export default function QuizReviewPage({ params }: { params: { id: string } }) {
+  const resultId = parseInt(params.id)
+  const { result, loading, error, fetchResult } = useQuizResultDetail(resultId)
+  const { quiz, loading: quizLoading, fetchQuiz } = useQuiz(result?.quizId || 0)
+
+  useEffect(() => {
+    fetchResult()
+  }, [fetchResult])
+
+  useEffect(() => {
+    if (result?.quizId) {
+      fetchQuiz()
+    }
+  }, [result?.quizId, fetchQuiz])
+
+  if (loading || quizLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Đang tải kết quả...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !result) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex mb-4 gap-2">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-red-500">Không thể tải kết quả</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {error?.message || "Kết quả bài kiểm tra không tồn tại"}
+                </p>
+              </div>
+            </div>
+            <Button asChild className="w-full">
+              <Link href="/authorized/lms/app/student/tests">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Quay lại
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const isPassed = result.isPassed
+  const scorePercentage = Number(result.score) || 0
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -73,8 +75,8 @@ export default function QuizReviewPage({ params }: { params: { id: string } }) {
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{quizResult.quizTitle}</h1>
-          <p className="text-muted-foreground">{quizResult.courseName}</p>
+          <h1 className="text-3xl font-bold">{result.quizTitle}</h1>
+          <p className="text-muted-foreground">Lần thử: {result.attemptNumber}</p>
         </div>
       </div>
 
@@ -86,34 +88,38 @@ export default function QuizReviewPage({ params }: { params: { id: string } }) {
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold">Kết quả</span>
                 <Badge
-                  variant={quizResult.status === "passed" ? "default" : "destructive"}
+                  variant={isPassed ? "default" : "destructive"}
                   className="text-lg px-4 py-1"
                 >
-                  {quizResult.status === "passed" ? "Đạt" : "Chưa đạt"}
+                  {isPassed ? "Đạt" : "Chưa đạt"}
                 </Badge>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Điểm số</span>
-                  <span className="text-2xl font-bold">{quizResult.score}%</span>
+                  <span className="text-2xl font-bold">{scorePercentage.toFixed(1)}%</span>
                 </div>
-                <Progress value={quizResult.score} className="h-3" />
-                <p className="text-xs text-muted-foreground">Điểm đạt: {quizResult.passingScore}% trở lên</p>
+                <Progress value={scorePercentage} className="h-3" />
+                <p className="text-xs text-muted-foreground">
+                  Điểm đạt: {quiz?.passScore || 60}% trở lên
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle2 className="h-5 w-5" />
                   <div>
-                    <p className="text-2xl font-bold">{quizResult.correctAnswers}</p>
+                    <p className="text-2xl font-bold">{result.correctAnswers}</p>
                     <p className="text-xs text-muted-foreground">Câu đúng</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-red-600">
                   <XCircle className="h-5 w-5" />
                   <div>
-                    <p className="text-2xl font-bold">{quizResult.totalQuestions - quizResult.correctAnswers}</p>
+                    <p className="text-2xl font-bold">
+                      {result.totalQuestions - result.correctAnswers}
+                    </p>
                     <p className="text-xs text-muted-foreground">Câu sai</p>
                   </div>
                 </div>
@@ -125,7 +131,9 @@ export default function QuizReviewPage({ params }: { params: { id: string } }) {
                 <Clock className="h-5 w-5" />
                 <div>
                   <p className="text-sm">Thời gian làm bài</p>
-                  <p className="text-lg font-semibold text-foreground">{quizResult.timeSpent}</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {result.timeTaken} phút
+                  </p>
                 </div>
               </div>
 
@@ -134,171 +142,114 @@ export default function QuizReviewPage({ params }: { params: { id: string } }) {
                 <div>
                   <p className="text-sm">Hoàn thành lúc</p>
                   <p className="text-lg font-semibold text-foreground">
-                    {new Date(quizResult.completedAt).toLocaleString("vi-VN")}
+                    {new Date(result.takenAt).toLocaleString("vi-VN", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
               </div>
-
-              {quizResult.status === "failed" && (
-                <Button className="w-full mt-4" asChild>
-                  <Link href={`/authorized/lms/app/student/courses/${quizResult.courseId}/learn`}>
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Làm lại bài kiểm tra
-                  </Link>
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Questions Review */}
-      <div>
-        <h2 className="mb-4 text-2xl font-bold">Chi tiết câu hỏi</h2>
-        <div className="space-y-4">
-          {quizResult.questions.map((question, index) => (
-            <Card
-              key={question.id}
-              className={
-                question.isCorrect
-                  ? "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20"
-                  : "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
-              }
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <CardTitle className="text-lg">
-                    Câu {index + 1}: {question.question}
-                  </CardTitle>
-                  {question.isCorrect ? (
-                    <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-green-600" />
-                  ) : (
-                    <XCircle className="h-6 w-6 flex-shrink-0 text-red-600" />
-                  )}
-                </div>
-                <Badge variant="outline" className="w-fit">
-                  {question.type === "MULTIPLE_CHOICE" && "Trắc nghiệm"}
-                  {question.type === "TRUE_FALSE" && "Đúng/Sai"}
-                  {question.type === "SHORT_ANSWER" && "Trả lời ngắn"}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Multiple Choice */}
-                {question.type === "MULTIPLE_CHOICE" && question.options && (
-                  <div className="space-y-2">
-                    {question.options.map((option, optIndex) => {
-                      const isUserAnswer = question.userAnswer === optIndex
-                      const isCorrectAnswer = question.correctAnswer === optIndex
-
-                      return (
-                        <div
-                          key={optIndex}
-                          className={`rounded-lg border-2 p-3 ${
-                            isCorrectAnswer
-                              ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                              : isUserAnswer
-                                ? "border-red-500 bg-red-50 dark:bg-red-950/30"
-                                : "border-border"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
-                            <span>{option}</span>
-                            {isCorrectAnswer && (
-                              <Badge variant="default" className="ml-auto">
-                                Đáp án đúng
-                              </Badge>
-                            )}
-                            {isUserAnswer && !isCorrectAnswer && (
-                              <Badge variant="destructive" className="ml-auto">
-                                Bạn chọn
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* True/False */}
-                {question.type === "TRUE_FALSE" && (
-                  <div className="space-y-2">
-                    <div
-                      className={`rounded-lg border-2 p-3 ${
-                        question.correctAnswer === true
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                          : question.userAnswer === true
-                            ? "border-red-500 bg-red-50 dark:bg-red-950/30"
-                            : "border-border"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold">Đúng</span>
-                        {question.correctAnswer === true && <Badge variant="default">Đáp án đúng</Badge>}
-                        {question.userAnswer === true && question.correctAnswer !== true && (
-                          <Badge variant="destructive">Bạn chọn</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div
-                      className={`rounded-lg border-2 p-3 ${
-                        question.correctAnswer === false
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                          : question.userAnswer === false
-                            ? "border-red-500 bg-red-50 dark:bg-red-950/30"
-                            : "border-border"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold">Sai</span>
-                        {question.correctAnswer === false && <Badge variant="default">Đáp án đúng</Badge>}
-                        {question.userAnswer === false && question.correctAnswer !== false && (
-                          <Badge variant="destructive">Bạn chọn</Badge>
-                        )}
-                      </div>
+      {/* Feedback Section */}
+      {result.feedback && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Chi tiết kết quả</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+              {result.feedback.split('\n').map((line, index) => {
+                const isCorrect = line.includes('Đúng')
+                const isWrong = line.includes('Sai') || line.includes('Chưa trả lời')
+                
+                return (
+                  <div
+                    key={index}
+                    className={`p-3 mb-2 rounded-lg ${
+                      isCorrect
+                        ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-green-500'
+                        : isWrong
+                          ? 'bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500'
+                          : 'bg-muted'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {isCorrect && <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />}
+                      {isWrong && <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />}
+                      <span className={isCorrect ? 'text-green-700 dark:text-green-400' : isWrong ? 'text-red-700 dark:text-red-400' : ''}>
+                        {line}
+                      </span>
                     </div>
                   </div>
-                )}
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                {/* Short Answer */}
-                {question.type === "SHORT_ANSWER" && (
-                  <div className="space-y-3">
-                    <div>
-                      <p className="mb-2 text-sm font-semibold text-muted-foreground">Câu trả lời của bạn:</p>
+      {/* Quiz Questions Detail - if available */}
+      {quiz?.questions && quiz.questions.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-2xl font-bold">Danh sách câu hỏi</h2>
+          <div className="space-y-4">
+            {quiz.questions.map((question: any, index: number) => (
+              <Card key={question.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <CardTitle className="text-lg">
+                      Câu {index + 1}: {question.questionText}
+                    </CardTitle>
+                    <Badge variant="outline" className="flex-shrink-0">
+                      {question.points} điểm
+                    </Badge>
+                  </div>
+                  <Badge variant="outline" className="w-fit">
+                    {question.questionType === "MULTIPLE_CHOICE" && "Trắc nghiệm"}
+                    {question.questionType === "TRUE_FALSE" && "Đúng/Sai"}
+                    {question.questionType === "SHORT_ANSWER" && "Trả lời ngắn"}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {question.answerOptions && question.answerOptions.map((option: any, optIndex: number) => {
+                    const isCorrectAnswer = option.isCorrect
+
+                    return (
                       <div
+                        key={option.id}
                         className={`rounded-lg border-2 p-3 ${
-                          question.isCorrect
+                          isCorrectAnswer
                             ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                            : "border-red-500 bg-red-50 dark:bg-red-950/30"
+                            : "border-border"
                         }`}
                       >
-                        {question.userAnswer}
-                      </div>
-                    </div>
-                    {!question.isCorrect && (
-                      <div>
-                        <p className="mb-2 text-sm font-semibold text-muted-foreground">Đáp án đúng:</p>
-                        <div className="rounded-lg border-2 border-green-500 bg-green-50 p-3 dark:bg-green-950/30">
-                          {question.correctAnswer}
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">
+                            {String.fromCharCode(65 + optIndex)}.
+                          </span>
+                          <span>{option.answerText}</span>
+                          {isCorrectAnswer && (
+                            <Badge variant="default" className="ml-auto">
+                              Đáp án đúng
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Explanation */}
-                {question.explanation && (
-                  <div className="rounded-lg bg-muted p-4">
-                    <p className="mb-1 text-sm font-semibold">Giải thích:</p>
-                    <p className="text-sm text-muted-foreground">{question.explanation}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

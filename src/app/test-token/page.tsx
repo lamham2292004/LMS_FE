@@ -8,7 +8,7 @@ export default function TestTokenPage() {
   const [tokenInfo, setTokenInfo] = useState<any>({})
 
   const checkToken = () => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('auth_token')
     const userType = localStorage.getItem('user_type')
     
     console.log("=== TOKEN CHECK ===")
@@ -60,7 +60,7 @@ export default function TestTokenPage() {
   }, [])
 
   const clearStorage = () => {
-    localStorage.removeItem('token')
+    localStorage.removeItem('auth_token')
     localStorage.removeItem('user_type')
     alert('Cleared! Please login again')
     window.location.href = '/auth/login'
