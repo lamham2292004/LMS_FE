@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Header } from "@lms/components/header"
 import { Card, CardContent } from "@lms/components/ui/card"
 import { Button } from "@lms/components/ui/button"
@@ -16,10 +19,105 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
+import { useCourseDetails } from "@/lib/hooks/useCourseDetails"
+import { useApproveCourse } from "@/lib/hooks/useLms"
+import { getLmsImageUrl } from "@/lib/config"
+import { ApprovalStatus } from "@/lib/lms-api-client"
+import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@lms/components/ui/dialog"
+import { Textarea } from "@lms/components/ui/textarea"
+import { useRouter } from "next/navigation"
 
 export default function AdminCoursePreviewPage({ params }: { params: { id: string } }) {
+  const courseId = parseInt(params.id)
+  const router = useRouter()
+  const { course, loading, error } = useCourseDetails(courseId)
+  
+  const [showRejectDialog, setShowRejectDialog] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState("")
+  
+  const { approveCourse, loading: approving } = useApproveCourse({
+    onSuccess: () => {
+      alert('✅ Khóa học đã được phê duyệt!')
+      router.push('/authorized/lms/app/admin/courses')
+    },
+    onError: (error) => {
+      alert(`❌ Lỗi: ${error.message || 'Không thể phê duyệt'}`)
+    }
+  })
+
+  const handleApprove = async () => {
+    if (!course) return
+    if (confirm('Bạn có chắc muốn phê duyệt khóa học này?')) {
+      await approveCourse(course.id, { 
+        approvalStatus: 'APPROVED' as ApprovalStatus
+      })
+    }
+  }
+
+  const handleReject = async () => {
+    if (!course) return
+    if (!rejectionReason.trim()) {
+      alert('Vui lòng nhập lý do từ chối!')
+      return
+    }
+    await approveCourse(course.id, { 
+      approvalStatus: 'REJECTED' as ApprovalStatus,
+      rejectionReason: rejectionReason 
+    })
+    setShowRejectDialog(false)
+    router.push('/authorized/lms/app/admin/courses')
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Xem trước khóa học" />
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Đang tải khóa học...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !course) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Xem trước khóa học" />
+        <div className="flex-1 p-6">
+          <Card className="border-destructive">
+            <CardContent className="p-6 flex items-center gap-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <div>
+                <h3 className="font-semibold text-destructive mb-2">Lỗi tải dữ liệu</h3>
+                <p className="text-sm text-muted-foreground">{error || 'Không tìm thấy khóa học'}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const approvalBadge = course.approvalStatus === 'APPROVED' ? 
+    <Badge>Đã duyệt</Badge> :
+    course.approvalStatus === 'REJECTED' ?
+    <Badge variant="destructive">Bị từ chối</Badge> :
+    <Badge variant="secondary">Chờ duyệt</Badge>
   return (
     <div className="flex flex-col">
       <Header title="Xem trước khóa học" />
@@ -28,20 +126,36 @@ export default function AdminCoursePreviewPage({ params }: { params: { id: strin
         {/* Back Button & Actions */}
         <div className="mb-6 flex items-center justify-between">
           <Button variant="outline" asChild>
-            <Link href="/admin/courses">
+            <Link href="/authorized/lms/app/admin/courses">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Quay lại danh sách
             </Link>
           </Button>
 
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRejectDialog(true)}
+              disabled={approving || course.approvalStatus === 'REJECTED'}
+            >
               <XCircle className="mr-2 h-4 w-4" />
               Từ chối
             </Button>
-            <Button>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Phê duyệt
+            <Button 
+              onClick={handleApprove}
+              disabled={approving || course.approvalStatus === 'APPROVED'}
+            >
+              {approving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Phê duyệt
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -59,35 +173,34 @@ export default function AdminCoursePreviewPage({ params }: { params: { id: strin
             {/* Course Header */}
             <div className="mb-6">
               <div className="mb-4 flex items-center gap-2">
-                <Badge>Lập trình</Badge>
-                <Badge variant="outline">Cơ bản</Badge>
-                <Badge variant="secondary">Chờ duyệt</Badge>
+                <Badge>{course.categoryName}</Badge>
+                <Badge variant="outline">{course.status}</Badge>
+                {approvalBadge}
               </div>
 
-              <h1 className="mb-4 text-4xl font-bold">Lập trình Python cơ bản</h1>
+              <h1 className="mb-4 text-4xl font-bold">{course.title}</h1>
 
               <p className="mb-6 text-lg text-muted-foreground">
-                Khóa học Python toàn diện dành cho người mới bắt đầu. Học từ cú pháp cơ bản đến lập trình hướng đối
-                tượng.
+                {course.description}
               </p>
 
               {/* Stats */}
               <div className="flex flex-wrap gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
-                  <span>Giảng viên: Nguyễn Văn B</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  <span>12 giờ</span>
+                  <span>Teacher ID: {course.teacherId}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-muted-foreground" />
-                  <span>45 bài học</span>
+                  <span>{course.lessons?.length || 0} bài học</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-muted-foreground" />
-                  <span>10 bài kiểm tra</span>
+                  <span>{course.quizzes?.length || 0} bài kiểm tra</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <span>{course.studentCount || 0} học viên</span>
                 </div>
               </div>
             </div>
@@ -313,29 +426,39 @@ export default function AdminCoursePreviewPage({ params }: { params: { id: strin
             <Card className="sticky top-6">
               <CardContent className="p-6">
                 <div className="mb-6 aspect-video overflow-hidden rounded-lg bg-muted">
-                  <img src="/course-1.jpg" alt="Course" className="h-full w-full object-cover" />
+                  {course.img ? (
+                    <Image 
+                      src={getLmsImageUrl(course.img)} 
+                      alt={course.title}
+                      width={400}
+                      height={225}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                      Không có ảnh
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-6">
                   <div className="mb-2 flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">1.500.000đ</span>
-                    <span className="text-lg text-muted-foreground line-through">2.000.000đ</span>
+                    <span className="text-3xl font-bold">{course.price.toLocaleString()}đ</span>
                   </div>
-                  <Badge variant="destructive">Giảm 25%</Badge>
                 </div>
 
                 <div className="mb-6 space-y-3 text-sm">
                   <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-muted-foreground" />
-                    <span>12 giờ video</span>
-                  </div>
-                  <div className="flex items-center gap-3">
                     <BookOpen className="h-5 w-5 text-muted-foreground" />
-                    <span>45 bài học</span>
+                    <span>{course.lessons?.length || 0} bài học</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-muted-foreground" />
-                    <span>10 bài kiểm tra</span>
+                    <span>{course.quizzes?.length || 0} bài kiểm tra</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <span>{course.studentCount || 0} học viên</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Award className="h-5 w-5 text-muted-foreground" />
@@ -344,11 +467,30 @@ export default function AdminCoursePreviewPage({ params }: { params: { id: strin
                 </div>
 
                 <div className="space-y-3">
-                  <Button className="w-full" size="lg">
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Phê duyệt khóa học
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={handleApprove}
+                    disabled={approving || course.approvalStatus === 'APPROVED'}
+                  >
+                    {approving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Phê duyệt khóa học
+                      </>
+                    )}
                   </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
+                  <Button 
+                    variant="outline" 
+                    className="w-full bg-transparent"
+                    onClick={() => setShowRejectDialog(true)}
+                    disabled={approving || course.approvalStatus === 'REJECTED'}
+                  >
                     <XCircle className="mr-2 h-4 w-4" />
                     Từ chối
                   </Button>
@@ -357,6 +499,47 @@ export default function AdminCoursePreviewPage({ params }: { params: { id: strin
             </Card>
           </div>
         </div>
+
+        {/* Reject Dialog */}
+        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Từ chối khóa học</DialogTitle>
+              <DialogDescription>
+                Vui lòng nhập lý do từ chối khóa học này. Lý do sẽ được gửi đến giảng viên.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <Textarea
+                placeholder="Nhập lý do từ chối..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+                Hủy
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleReject}
+                disabled={approving || !rejectionReason.trim()}
+              >
+                {approving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Xác nhận từ chối'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

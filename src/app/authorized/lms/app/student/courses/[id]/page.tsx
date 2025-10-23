@@ -1,6 +1,7 @@
 "use client"
 
 import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Header } from "@lms/components/header"
 import { Card, CardContent } from "@lms/components/ui/card"
 import { Button } from "@lms/components/ui/button"
@@ -17,174 +18,80 @@ import {
   Star,
   Users,
   FileText,
-  Video
+  Video,
+  RefreshCw,
+  BookMarked
 } from "lucide-react"
 import Link from "next/link"
-
-// Mock data - trong thực tế sẽ fetch từ API dựa trên id
-const courseData = {
-  1: {
-    id: 1,
-    title: "Lập trình Python cơ bản",
-    instructor: "Nguyễn Văn B",
-    category: "Lập trình",
-    level: "Cơ bản",
-    rating: 4.8,
-    students: 1234,
-    duration: "40 giờ",
-    progress: 65,
-    completedLessons: 13,
-    totalLessons: 20,
-    description: "Khóa học Python cơ bản giúp bạn nắm vững các kiến thức nền tảng về lập trình Python. Từ cú pháp cơ bản đến các khái niệm lập trình hướng đối tượng.",
-    enrolled: true,
-  },
-  2: {
-    id: 2,
-    title: "Web Development với React",
-    instructor: "Trần Thị C",
-    category: "Web Development",
-    level: "Trung cấp",
-    rating: 4.7,
-    students: 856,
-    duration: "35 giờ",
-    progress: 40,
-    completedLessons: 8,
-    totalLessons: 20,
-    description: "Học cách xây dựng ứng dụng web hiện đại với React. Từ components, hooks đến state management và routing.",
-    enrolled: true,
-  },
-  3: {
-    id: 3,
-    title: "Cơ sở dữ liệu SQL",
-    instructor: "Lê Văn D",
-    category: "Database",
-    level: "Cơ bản",
-    rating: 4.6,
-    students: 987,
-    duration: "25 giờ",
-    progress: 80,
-    completedLessons: 16,
-    totalLessons: 20,
-    description: "Nắm vững SQL và quản lý cơ sở dữ liệu quan hệ. Học cách thiết kế, truy vấn và tối ưu hóa database.",
-    enrolled: true,
-  },
-  4: {
-    id: 4,
-    title: "HTML & CSS Fundamentals",
-    instructor: "Phạm Thị E",
-    category: "Web Development",
-    level: "Cơ bản",
-    rating: 4.9,
-    students: 2341,
-    duration: "20 giờ",
-    progress: 100,
-    completedLessons: 20,
-    totalLessons: 20,
-    description: "Khóa học HTML & CSS từ cơ bản đến nâng cao. Học cách xây dựng giao diện web responsive và đẹp mắt.",
-    enrolled: true,
-    completed: true,
-    score: 9.2,
-  },
-  5: {
-    id: 5,
-    title: "JavaScript Cơ bản",
-    instructor: "Hoàng Văn F",
-    category: "Lập trình",
-    level: "Cơ bản",
-    rating: 4.8,
-    students: 1567,
-    duration: "30 giờ",
-    progress: 100,
-    completedLessons: 20,
-    totalLessons: 20,
-    description: "Học JavaScript từ đầu. Nắm vững cú pháp, DOM manipulation, async programming và ES6+.",
-    enrolled: true,
-    completed: true,
-    score: 8.8,
-  },
-  6: {
-    id: 6,
-    title: "Machine Learning cơ bản",
-    instructor: "TS. Nguyễn Văn G",
-    category: "AI & Machine Learning",
-    level: "Trung cấp",
-    rating: 4.8,
-    students: 1234,
-    duration: "40 giờ",
-    price: 1500000,
-    description: "Khóa học Machine Learning cơ bản với Python. Học các thuật toán ML phổ biến và ứng dụng thực tế.",
-    enrolled: false,
-  },
-}
-
-const lessons = [
-  {
-    id: 1,
-    title: "Giới thiệu về Python",
-    duration: "15:30",
-    type: "video",
-    completed: true,
-    locked: false,
-  },
-  {
-    id: 2,
-    title: "Cài đặt môi trường",
-    duration: "20:45",
-    type: "video",
-    completed: true,
-    locked: false,
-  },
-  {
-    id: 3,
-    title: "Biến và kiểu dữ liệu",
-    duration: "25:15",
-    type: "video",
-    completed: true,
-    locked: false,
-  },
-  {
-    id: 4,
-    title: "Câu lệnh điều kiện",
-    duration: "18:30",
-    type: "video",
-    completed: false,
-    locked: false,
-  },
-  {
-    id: 5,
-    title: "Vòng lặp",
-    duration: "22:00",
-    type: "video",
-    completed: false,
-    locked: false,
-  },
-  {
-    id: 6,
-    title: "Hàm trong Python",
-    duration: "30:00",
-    type: "video",
-    completed: false,
-    locked: true,
-  },
-]
+import { useCourse, useCheckEnrollment } from '@/lib/hooks/useLms'
 
 export default function CourseDetailPage() {
   const params = useParams()
   const courseId = parseInt(params.id as string)
-  const course = courseData[courseId as keyof typeof courseData]
+  
+  const { data: course, loading, error, execute: fetchCourse } = useCourse(courseId)
+  const { isEnrolled, loading: checkingEnrollment, checkEnrollment } = useCheckEnrollment(courseId)
 
-  if (!course) {
+  useEffect(() => {
+    if (courseId) {
+      fetchCourse()
+      checkEnrollment()
+    }
+  }, [courseId])
+
+  if (loading || checkingEnrollment) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="p-8 text-center">
-          <h1 className="mb-4 text-2xl font-bold">Không tìm thấy khóa học</h1>
-          <Button asChild>
-            <Link href="/authorized/lms/app/student/courses">Quay lại</Link>
-          </Button>
-        </Card>
+      <div className="flex flex-col">
+        <Header title="Chi tiết khóa học" showCart />
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Đang tải khóa học từ backend...</p>
+          </div>
+        </div>
       </div>
     )
   }
+
+  if (error || !course) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Chi tiết khóa học" showCart />
+        <div className="flex-1 p-6">
+          <Card className="p-8 text-center">
+            <h1 className="mb-4 text-2xl font-bold text-destructive">
+              {error?.message || "Không tìm thấy khóa học"}
+            </h1>
+            <p className="text-muted-foreground mb-4">
+              Khóa học không tồn tại hoặc bạn không có quyền truy cập.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={fetchCourse} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Thử lại
+              </Button>
+              <Button asChild>
+                <Link href="/authorized/lms/app/student/courses">Quay lại</Link>
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Build full image URL from backend
+  const imageUrl = course.img 
+    ? (course.img.startsWith('http') 
+        ? course.img 
+        : `${process.env.NEXT_PUBLIC_LMS_API_URL?.replace('/api', '') || 'http://localhost:8083'}${course.img.startsWith('/') ? '' : '/'}${course.img}`)
+    : '/images/course-1.png';
+
+  const totalLessons = course.lessons?.length || 0;
+  const totalDuration = course.lessons?.reduce((sum, lesson) => sum + (lesson.duration || 0), 0) || 0;
+  const formattedDuration = totalDuration > 0 
+    ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m` 
+    : 'Chưa có thông tin';
 
   return (
     <div className="flex flex-col">
@@ -193,62 +100,56 @@ export default function CourseDetailPage() {
       <div className="flex-1 p-6">
         {/* Course Header */}
         <div className="mb-8 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-8">
-          <div className="mb-4 flex items-center gap-2">
-            <Badge variant="secondary">{course.category}</Badge>
-            <Badge variant="outline">{course.level}</Badge>
-            {course.completed && <Badge className="bg-success text-white">Đã hoàn thành</Badge>}
-          </div>
-
-          <h1 className="mb-4 text-4xl font-bold">{course.title}</h1>
-          
-          <p className="mb-6 text-lg text-muted-foreground">{course.description}</p>
-
-          <div className="mb-6 flex flex-wrap items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <Star className="h-5 w-5 fill-warning text-warning" />
-              <span className="font-semibold">{course.rating}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <span>{course.students.toLocaleString()} học viên</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              <span>{course.duration}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              <span>{course.totalLessons} bài học</span>
-            </div>
-          </div>
-
-          <p className="text-sm text-muted-foreground">Giảng viên: {course.instructor}</p>
-
-          {course.enrolled && !course.completed && (
-            <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span>Tiến độ học tập</span>
-                <span className="font-semibold">{course.progress}%</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: Image */}
+            <div className="lg:col-span-1">
+              <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
+                <img
+                  src={imageUrl}
+                  alt={course.title}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/course-1.png';
+                  }}
+                />
               </div>
-              <Progress value={course.progress} className="h-3" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Đã hoàn thành {course.completedLessons}/{course.totalLessons} bài học
-              </p>
             </div>
-          )}
 
-          {course.completed && (
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-2">
-                <Award className="h-5 w-5 text-success" />
-                <span className="font-semibold text-success">Điểm: {course.score}/10</span>
+            {/* Right: Info */}
+            <div className="lg:col-span-2">
+              <div className="mb-4 flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary">{course.categoryName}</Badge>
+                <Badge variant="outline">{course.status}</Badge>
+                {isEnrolled && <Badge className="bg-success text-white">Đã đăng ký</Badge>}
               </div>
-              <Button>
-                <Award className="mr-2 h-4 w-4" />
-                Xem chứng chỉ
-              </Button>
+
+              <h1 className="mb-4 text-4xl font-bold">{course.title}</h1>
+              
+              <p className="mb-6 text-lg text-muted-foreground">{course.description}</p>
+
+              <div className="mb-6 flex flex-wrap items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  <span>{formattedDuration}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  <span>{totalLessons} bài học</span>
+                </div>
+              </div>
+
+              {course.startTime && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  📅 Bắt đầu: {new Date(course.startTime).toLocaleDateString('vi-VN')}
+                </p>
+              )}
+              {course.endTime && (
+                <p className="text-sm text-muted-foreground">
+                  🏁 Kết thúc: {new Date(course.endTime).toLocaleDateString('vi-VN')}
+                </p>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -258,51 +159,69 @@ export default function CourseDetailPage() {
               <TabsList>
                 <TabsTrigger value="lessons">Nội dung khóa học</TabsTrigger>
                 <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-                <TabsTrigger value="reviews">Đánh giá</TabsTrigger>
               </TabsList>
 
               <TabsContent value="lessons">
                 <Card>
                   <CardContent className="p-6">
-                    <h2 className="mb-4 text-xl font-bold">Danh sách bài học</h2>
-                    <div className="space-y-2">
-                      {lessons.map((lesson) => (
-                        <div
-                          key={lesson.id}
-                          className={`flex items-center justify-between rounded-lg border p-4 transition-colors ${
-                            lesson.locked
-                              ? "cursor-not-allowed opacity-50"
-                              : "cursor-pointer hover:bg-accent"
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            {lesson.completed ? (
-                              <CheckCircle2 className="h-5 w-5 text-success" />
-                            ) : lesson.locked ? (
-                              <Lock className="h-5 w-5 text-muted-foreground" />
-                            ) : (
-                              <Play className="h-5 w-5 text-primary" />
-                            )}
+                    <h2 className="mb-4 text-xl font-bold flex items-center gap-2">
+                      <BookMarked className="h-5 w-5" />
+                      Danh sách bài học ({totalLessons})
+                    </h2>
+                    
+                    {course.lessons && course.lessons.length > 0 ? (
+                      <div className="space-y-2">
+                        {course.lessons.map((lesson, index) => {
+                          const isLocked = !isEnrolled;
+                          
+                          return (
+                            <div
+                              key={lesson.id}
+                              className={`flex items-center justify-between rounded-lg border p-4 transition-colors ${
+                                isLocked
+                                  ? "cursor-not-allowed opacity-50"
+                                  : "cursor-pointer hover:bg-accent"
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                {isLocked ? (
+                                  <Lock className="h-5 w-5 text-muted-foreground" />
+                                ) : (
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                                    {lesson.orderIndex}
+                                  </div>
+                                )}
 
-                            <div>
-                              <p className="font-semibold">{lesson.title}</p>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Video className="h-4 w-4" />
-                                <span>{lesson.duration}</span>
+                                <div>
+                                  <p className="font-semibold">{lesson.title}</p>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Video className="h-4 w-4" />
+                                    {lesson.duration ? (
+                                      <span>{lesson.duration} phút</span>
+                                    ) : (
+                                      <span>Chưa có thời lượng</span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
 
-                          {!lesson.locked && (
-                            <Button size="sm" variant={lesson.completed ? "outline" : "default"} asChild>
-                              <Link href={`/authorized/lms/app/student/courses/${courseId}/learn`}>
-                                {lesson.completed ? "Xem lại" : "Học ngay"}
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                              {!isLocked && (
+                                <Button size="sm" asChild>
+                                  <Link href={`/authorized/lms/app/student/courses/${courseId}/lessons/${lesson.id}`}>
+                                    Học ngay
+                                  </Link>
+                                </Button>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Chưa có bài học nào trong khóa học này</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -318,52 +237,37 @@ export default function CourseDetailPage() {
                       </div>
 
                       <div>
-                        <h3 className="mb-2 font-semibold">Bạn sẽ học được gì</h3>
-                        <ul className="space-y-2">
+                        <h3 className="mb-2 font-semibold">Thông tin khóa học</h3>
+                        <ul className="space-y-2 text-muted-foreground">
                           <li className="flex items-start gap-2">
                             <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
-                            <span>Nắm vững kiến thức cơ bản và nâng cao</span>
+                            <span>Danh mục: {course.categoryName}</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
-                            <span>Thực hành với các dự án thực tế</span>
+                            <span>Trạng thái: {course.status}</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
-                            <span>Nhận chứng chỉ sau khi hoàn thành</span>
+                            <span>Tổng số bài học: {totalLessons}</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
+                            <span>Thời lượng: {formattedDuration}</span>
                           </li>
                         </ul>
                       </div>
 
-                      <div>
-                        <h3 className="mb-2 font-semibold">Yêu cầu</h3>
-                        <ul className="list-inside list-disc space-y-1 text-muted-foreground">
-                          <li>Không cần kiến thức nền tảng</li>
-                          <li>Máy tính có kết nối internet</li>
-                          <li>Tinh thần học hỏi và kiên trì</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="reviews">
-                <Card>
-                  <CardContent className="p-6">
-                    <h2 className="mb-4 text-xl font-bold">Đánh giá từ học viên</h2>
-                    <div className="mb-6 flex items-center gap-4">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold">{course.rating}</div>
-                        <div className="flex items-center gap-1 text-warning">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-current" />
-                          ))}
+                      {course.startTime && course.endTime && (
+                        <div>
+                          <h3 className="mb-2 font-semibold">Thời gian</h3>
+                          <ul className="space-y-1 text-muted-foreground">
+                            <li>Bắt đầu: {new Date(course.startTime).toLocaleString('vi-VN')}</li>
+                            <li>Kết thúc: {new Date(course.endTime).toLocaleString('vi-VN')}</li>
+                          </ul>
                         </div>
-                        <p className="text-sm text-muted-foreground">Đánh giá khóa học</p>
-                      </div>
+                      )}
                     </div>
-                    <p className="text-center text-muted-foreground">Chưa có đánh giá nào</p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -378,58 +282,57 @@ export default function CourseDetailPage() {
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Giảng viên</span>
-                    <span className="font-semibold">{course.instructor}</span>
+                    <span className="text-sm text-muted-foreground">Danh mục</span>
+                    <Badge variant="outline">{course.categoryName}</Badge>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Cấp độ</span>
-                    <Badge variant="outline">{course.level}</Badge>
+                    <span className="text-sm text-muted-foreground">Trạng thái</span>
+                    <Badge variant="secondary">{course.status}</Badge>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Thời lượng</span>
-                    <span className="font-semibold">{course.duration}</span>
+                    <span className="font-semibold">{formattedDuration}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Bài học</span>
-                    <span className="font-semibold">{course.totalLessons}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Học viên</span>
-                    <span className="font-semibold">{course.students.toLocaleString()}</span>
+                    <span className="font-semibold">{totalLessons}</span>
                   </div>
                 </div>
 
-                {course.enrolled ? (
-                  <div className="mt-6 space-y-2">
-                    <Button className="w-full" size="lg" asChild>
-                      <Link href={`/authorized/lms/app/student/courses/${courseId}/learn`}>
-                        <Play className="mr-2 h-4 w-4" />
-                        {course.completed ? "Xem lại khóa học" : "Tiếp tục học"}
-                      </Link>
-                    </Button>
-                    {course.completed && (
-                      <Button className="w-full" variant="outline" size="lg">
-                        <Award className="mr-2 h-4 w-4" />
-                        Xem chứng chỉ
+                <div className="mt-6">
+                  {isEnrolled ? (
+                    <div className="space-y-2">
+                      <Button className="w-full" size="lg" asChild>
+                        <Link href={`/authorized/lms/app/student/courses/${courseId}/lessons/${course.lessons?.[0]?.id || 1}`}>
+                          <Play className="mr-2 h-4 w-4" />
+                          Bắt đầu học
+                        </Link>
                       </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-6">
-                    <div className="mb-4 text-center">
-                      <div className="text-3xl font-bold text-primary">
-                        {course.price?.toLocaleString()}đ
-                      </div>
                     </div>
-                    <Button className="w-full" size="lg">
-                      Đăng ký ngay
-                    </Button>
-                  </div>
-                )}
+                  ) : (
+                    <div>
+                      <div className="mb-4 text-center">
+                        <div className="text-3xl font-bold text-primary">
+                          {course.price === 0 ? (
+                            <span className="text-success">Miễn phí</span>
+                          ) : (
+                            `${course.price.toLocaleString()}đ`
+                          )}
+                        </div>
+                      </div>
+                      <Button className="w-full" size="lg" disabled>
+                        Đăng ký ngay
+                        <p className="text-xs mt-1">(Chưa đăng ký khóa học)</p>
+                      </Button>
+                      <p className="text-xs text-center text-muted-foreground mt-2">
+                        Vui lòng đăng ký khóa học từ trang Khám phá
+                      </p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

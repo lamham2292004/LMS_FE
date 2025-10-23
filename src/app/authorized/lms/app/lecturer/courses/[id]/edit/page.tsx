@@ -1,326 +1,379 @@
 "use client"
 
-import { useState } from "react"
-import { Header } from "@lms/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@lms/components/ui/card"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@lms/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@lms/components/ui/card"
 import { Input } from "@lms/components/ui/input"
 import { Label } from "@lms/components/ui/label"
 import { Textarea } from "@lms/components/ui/textarea"
-import { Badge } from "@lms/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@lms/components/ui/tabs"
-import { Save, Eye, Plus, GripVertical, Trash2, Edit } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@lms/components/ui/dialog"
+import { ArrowLeft, Loader2, Save } from "lucide-react"
 import Link from "next/link"
-
-const initialLessons = [
-  { id: 1, title: "Giới thiệu về Python", type: "video", duration: "15:30" },
-  { id: 2, title: "Cài đặt môi trường", type: "video", duration: "20:45" },
-  { id: 3, title: "Biến và kiểu dữ liệu", type: "video", duration: "25:00" },
-]
+import { lmsApiClient, CourseStatus, CategoryResponse, CourseResponse } from "@/lib/lms-api-client"
+import { LMS_API_CONFIG } from "@/lib/config"
 
 export default function EditCoursePage({ params }: { params: { id: string } }) {
-  const [lessons, setLessons] = useState(initialLessons)
-  const [selectedLesson, setSelectedLesson] = useState<any>(null)
-  const [showEditDialog, setShowEditDialog] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [editTitle, setEditTitle] = useState("")
+  const router = useRouter()
+  const courseId = parseInt(params.id)
 
-  const handleEditLesson = () => {
-    console.log("[v0] Editing lesson:", selectedLesson?.id, "New title:", editTitle)
-    setLessons(lessons.map((l) => (l.id === selectedLesson?.id ? { ...l, title: editTitle } : l)))
-    setShowEditDialog(false)
+  // Form state
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [price, setPrice] = useState<number>(0)
+  const [isFree, setIsFree] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [currentImage, setCurrentImage] = useState<string>("")
+  const [status, setStatus] = useState<CourseStatus>(CourseStatus.UPCOMING)
+  const [startTime, setStartTime] = useState<string>("")
+  const [endTime, setEndTime] = useState<string>("")
+
+  // UI state
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<CategoryResponse[]>([])
+  const [course, setCourse] = useState<CourseResponse | null>(null)
+
+  // Load course data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        
+        console.log('📖 Loading course data for ID:', courseId)
+        
+        // Load categories
+        const categoriesResponse = await lmsApiClient.getAllCategories()
+        console.log('📚 Categories loaded:', categoriesResponse.result?.length)
+        if (categoriesResponse.result) {
+          setCategories(categoriesResponse.result)
+        }
+
+        // Load course
+        console.log('🔍 Fetching course by ID:', courseId)
+        const courseResponse = await lmsApiClient.getCourse(courseId)
+        console.log('📦 Course response:', courseResponse)
+        
+        if (courseResponse.result) {
+          const courseData = courseResponse.result
+          console.log('✅ Course data loaded:', courseData)
+          setCourse(courseData)
+          
+          // Populate form
+          setTitle(courseData.title || "")
+          setDescription(courseData.description || "")
+          setCategoryId(courseData.categoryId || null)
+          setPrice(courseData.price || 0)
+          setIsFree(courseData.price === 0)
+          setStatus(courseData.status || CourseStatus.UPCOMING)
+          setCurrentImage(courseData.img || "")
+          
+          // Format datetime for input (remove timezone and seconds)
+          if (courseData.startTime) {
+            // "2025-10-16T15:15:00+07:00" -> "2025-10-16T15:15"
+            const dateStr = courseData.startTime.split('+')[0].split('.')[0]
+            setStartTime(dateStr.substring(0, 16)) // YYYY-MM-DDTHH:mm
+          }
+          if (courseData.endTime) {
+            const dateStr = courseData.endTime.split('+')[0].split('.')[0]
+            setEndTime(dateStr.substring(0, 16))
+          }
+        }
+      } catch (err: any) {
+        console.error("Error loading course:", err)
+        setError("Không thể tải thông tin khóa học")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [courseId])
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+    }
   }
 
-  const handleDeleteLesson = () => {
-    console.log("[v0] Deleting lesson:", selectedLesson?.id)
-    setLessons(lessons.filter((l) => l.id !== selectedLesson?.id))
-    setShowDeleteDialog(false)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      setSaving(true)
+      setError(null)
+
+      // Validation
+      if (!title.trim()) {
+        setError("Vui lòng nhập tên khóa học")
+        return
+      }
+      if (!categoryId) {
+        setError("Vui lòng chọn danh mục")
+        return
+      }
+
+      // Format datetime for Spring Boot OffsetDateTime
+      const formatDateTime = (datetime: string) => {
+        if (!datetime) return undefined
+        // Convert to ISO 8601 format with timezone
+        // "2025-10-16T15:15" -> "2025-10-16T15:15:00+07:00"
+        const withSeconds = datetime.includes(':') && datetime.split(':').length === 2 
+          ? `${datetime}:00` 
+          : datetime
+        // Add timezone offset (Vietnam = +07:00)
+        return `${withSeconds}+07:00`
+      }
+
+      const courseData = {
+        title: title.trim(),
+        description: description.trim(),
+        price: isFree ? 0 : price,
+        categoryId: categoryId,
+        status: status,
+        startTime: formatDateTime(startTime),
+        endTime: formatDateTime(endTime),
+      }
+
+      console.log("Updating course:", courseData)
+
+      const response = await lmsApiClient.updateCourse(courseId, courseData, imageFile || undefined)
+
+      if (response.result) {
+        console.log("✅ Course updated successfully")
+        // Redirect to course detail page
+        router.push(`/authorized/lms/app/lecturer/courses/${courseId}`)
+      }
+    } catch (err: any) {
+      console.error("Error updating course:", err)
+      setError(err.message || "Không thể cập nhật khóa học. Vui lòng thử lại.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!course) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-muted-foreground">Không tìm thấy khóa học</p>
+          <Link href="/authorized/lms/app/lecturer/courses">
+            <Button className="mt-4">Quay lại danh sách</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col">
-      <Header title="Chỉnh sửa khóa học" />
-
-      <div className="flex-1 p-6">
-        {/* Header Actions */}
-        <div className="mb-6 flex items-center justify-between">
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-4xl space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Link href={`/authorized/lms/app/lecturer/courses/${courseId}`}>
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
           <div>
             <h1 className="text-3xl font-bold">Chỉnh sửa khóa học</h1>
-            <p className="text-muted-foreground">Cập nhật thông tin và nội dung khóa học</p>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/preview`}>
-                <Eye className="mr-2 h-4 w-4" />
-                Xem trước
-              </Link>
-            </Button>
-            <Button>
-              <Save className="mr-2 h-4 w-4" />
-              Lưu thay đổi
-            </Button>
+            <p className="text-muted-foreground mt-1">Cập nhật thông tin khóa học của bạn</p>
           </div>
         </div>
 
-        <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="basic">Thông tin cơ bản</TabsTrigger>
-            <TabsTrigger value="curriculum">Chương trình học</TabsTrigger>
-            <TabsTrigger value="pricing">Giá & Xuất bản</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="basic">
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông tin khóa học</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Tên khóa học</Label>
-                  <Input id="title" defaultValue="Lập trình Python cơ bản" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Mô tả ngắn</Label>
-                  <Textarea
-                    id="description"
-                    rows={3}
-                    defaultValue="Khóa học Python toàn diện dành cho người mới bắt đầu."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fullDescription">Mô tả chi tiết</Label>
-                  <Textarea
-                    id="fullDescription"
-                    rows={6}
-                    defaultValue="Học từ cú pháp cơ bản đến lập trình hướng đối tượng, xử lý file, và làm việc với thư viện phổ biến."
-                  />
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Danh mục</Label>
-                    <select id="category" className="w-full rounded-md border border-input bg-background px-3 py-2">
-                      <option>Lập trình</option>
-                      <option>Web Development</option>
-                      <option>AI & Machine Learning</option>
-                      <option>DevOps</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="level">Cấp độ</Label>
-                    <select id="level" className="w-full rounded-md border border-input bg-background px-3 py-2">
-                      <option>Cơ bản</option>
-                      <option>Trung cấp</option>
-                      <option>Nâng cao</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="thumbnail">Ảnh đại diện</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="h-32 w-48 rounded-lg bg-muted" />
-                    <Button variant="outline">Tải ảnh lên</Button>
-                  </div>
-                </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Error Display */}
+          {error && (
+            <Card className="border-destructive">
+              <CardContent className="p-4">
+                <p className="text-destructive text-sm">{error}</p>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="curriculum">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Chương trình học</CardTitle>
-                  <Button asChild>
-                    <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/lessons/new`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Thêm bài học
-                    </Link>
-                  </Button>
+          {/* Basic Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Thông tin cơ bản</CardTitle>
+              <CardDescription>Thông tin chính về khóa học</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Tên khóa học *</Label>
+                <Input
+                  id="title"
+                  placeholder="VD: Lập trình React từ cơ bản đến nâng cao"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Mô tả</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Mô tả chi tiết về khóa học..."
+                  rows={5}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Danh mục *</Label>
+                  <select
+                    id="category"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    value={categoryId || ""}
+                    onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {lessons.map((lesson, index) => (
-                    <div key={lesson.id} className="flex items-center gap-3 rounded-lg border p-4">
-                      <GripVertical className="h-5 w-5 cursor-move text-muted-foreground" />
 
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">
-                            {index + 1}. {lesson.title}
-                          </p>
-                          <Badge variant="outline" className="text-xs">
-                            {lesson.type}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{lesson.duration}</p>
-                      </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Trạng thái</Label>
+                  <select
+                    id="status"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as CourseStatus)}
+                  >
+                    <option value="UPCOMING">Sắp mở</option>
+                    <option value="OPEN">Đã mở</option>
+                    <option value="CLOSED">Đã đóng</option>
+                  </select>
+                </div>
+              </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedLesson(lesson)
-                            setEditTitle(lesson.title)
-                            setShowEditDialog(true)
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedLesson(lesson)
-                            setShowDeleteDialog(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Ngày bắt đầu</Label>
+                  <Input
+                    id="startTime"
+                    type="datetime-local"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endTime">Ngày kết thúc</Label>
+                  <Input
+                    id="endTime"
+                    type="datetime-local"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    min={startTime}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="image">Ảnh khóa học</Label>
+                <div className="space-y-2">
+                  {currentImage && (
+                    <div className="rounded-lg overflow-hidden border">
+                      <img
+                        src={`${LMS_API_CONFIG.baseUrl}${currentImage}`}
+                        alt={title}
+                        className="w-full h-48 object-cover"
+                      />
                     </div>
-                  ))}
+                  )}
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  {imageFile && (
+                    <p className="text-sm text-muted-foreground">
+                      ✅ New image selected: {imageFile.name}
+                    </p>
+                  )}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                <div className="mt-6 rounded-lg border border-dashed p-8 text-center">
-                  <p className="mb-4 text-muted-foreground">Kéo thả để sắp xếp lại thứ tự bài học</p>
-                  <Button variant="outline" asChild>
-                    <Link href={`/authorized/lms/app/lecturer/courses/${params.id}/lessons/new`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Thêm bài học mới
-                    </Link>
-                  </Button>
+          {/* Pricing */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Giá và xuất bản</CardTitle>
+              <CardDescription>Đặt giá cho khóa học</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isFree"
+                  checked={isFree}
+                  onChange={(e) => setIsFree(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="isFree" className="cursor-pointer">
+                  Khóa học miễn phí
+                </Label>
+              </div>
+
+              {!isFree && (
+                <div className="space-y-2">
+                  <Label htmlFor="price">Giá (VNĐ)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    placeholder="0"
+                    value={price}
+                    onChange={(e) => setPrice(parseInt(e.target.value) || 0)}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              )}
+            </CardContent>
+          </Card>
 
-          <TabsContent value="pricing">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Giá khóa học</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <input type="checkbox" id="isFree" className="h-4 w-4" />
-                    <Label htmlFor="isFree">Khóa học miễn phí</Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Giá (VNĐ)</Label>
-                    <Input id="price" type="number" defaultValue="1500000" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="discount">Giá khuyến mãi (VNĐ)</Label>
-                    <Input id="discount" type="number" placeholder="Để trống nếu không có" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Trạng thái xuất bản</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Trạng thái</Label>
-                    <select id="status" className="w-full rounded-md border border-input bg-background px-3 py-2">
-                      <option>Bản nháp</option>
-                      <option>Đã xuất bản</option>
-                      <option>Tạm ẩn</option>
-                    </select>
-                  </div>
-
-                  <div className="rounded-lg bg-muted p-4">
-                    <h4 className="mb-2 font-semibold">Checklist xuất bản</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <Badge variant="default" className="h-5 w-5 rounded-full p-0">
-                          ✓
-                        </Badge>
-                        <span>Thông tin cơ bản đầy đủ</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge variant="default" className="h-5 w-5 rounded-full p-0">
-                          ✓
-                        </Badge>
-                        <span>Có ít nhất 5 bài học</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge variant="secondary" className="h-5 w-5 rounded-full p-0">
-                          !
-                        </Badge>
-                        <span>Đã thiết lập giá</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <Button className="w-full" size="lg">
-                    Xuất bản khóa học
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Chỉnh sửa bài học</DialogTitle>
-            <DialogDescription>Cập nhật thông tin bài học</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Tên bài học</Label>
-              <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-            </div>
+          {/* Actions */}
+          <div className="flex justify-end gap-4">
+            <Link href={`/authorized/lms/app/lecturer/courses/${courseId}`}>
+              <Button type="button" variant="outline" disabled={saving}>
+                Hủy
+              </Button>
+            </Link>
+            <Button type="submit" disabled={saving || !title.trim() || !categoryId}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang lưu...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Lưu thay đổi
+                </>
+              )}
+            </Button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Hủy
-            </Button>
-            <Button onClick={handleEditLesson}>Lưu thay đổi</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xóa bài học</DialogTitle>
-            <DialogDescription>
-              Bạn có chắc muốn xóa bài học "{selectedLesson?.title}"? Hành động này không thể hoàn tác.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Hủy
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteLesson}>
-              Xóa
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </form>
+      </div>
     </div>
   )
 }

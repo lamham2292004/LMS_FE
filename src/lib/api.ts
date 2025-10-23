@@ -6,9 +6,11 @@ const API_BASE_URL = API_CONFIG.baseUrl;
 // API Response Types
 export interface ApiResponse<T = any> {
   data?: T;
+  result?: T;  // Spring Boot backend format
   user?: T;
   token?: string;
-  message: string;
+  message?: string;
+  code?: number;  // Spring Boot backend format
   status?: number;
 }
 
@@ -32,6 +34,12 @@ class ApiClient {
       typeof window !== "undefined"
         ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
         : null;
+    
+    // Debug log
+    if (typeof window !== "undefined") {
+      console.log("🔧 ApiClient constructor - Token loaded from localStorage:", 
+        this.token ? `YES (${this.token.substring(0, 20)}...)` : "NO");
+    }
   }
 
   private async request<T>(
@@ -114,17 +122,22 @@ class ApiClient {
     const profileResponse = await this.request<UserProfile>(endpoint);
     console.log("API Client - Profile endpoint response:", profileResponse);
     
+    // Handle both formats: response.data OR response.result (Spring Boot backend)
+    const profileData = profileResponse.data || profileResponse.result || (profileResponse as any);
+    const meData = meResponse.data || meResponse.result || (meResponse as any);
+    
     // Merge data: profile API data + token claims
-    if (profileResponse.data && meResponse.data) {
+    if (profileData && typeof profileData === 'object' && meData && typeof meData === 'object') {
       const mergedData = {
-        ...profileResponse.data,
+        ...profileData,
         // Add missing fields from token (from /v1/me)
-        birth_date: profileResponse.data.birth_date || meResponse.data.birth_date,
-        gender: profileResponse.data.gender || meResponse.data.gender,
-        address: profileResponse.data.address || meResponse.data.address,
+        birth_date: profileData.birth_date || meData.birth_date,
+        gender: profileData.gender || meData.gender,
+        address: profileData.address || meData.address,
       };
       console.log("API Client - Merged profile data:", mergedData);
-      return { ...profileResponse, data: mergedData };
+      // Return in format that AuthContext expects
+      return { data: mergedData, result: mergedData } as any;
     }
     
     return profileResponse;
@@ -147,6 +160,8 @@ class ApiClient {
     this.token = token;
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      // Also set token in cookie for middleware access
+      document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
     }
   }
 
@@ -158,6 +173,8 @@ class ApiClient {
     this.token = null;
     if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      // Also clear cookie
+      document.cookie = "token=; path=/; max-age=0";
     }
   }
 

@@ -87,6 +87,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check authentication status on mount
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("🔍 AuthContext - checkAuth START");
+      console.log("🔍 apiClient.isAuthenticated():", apiClient.isAuthenticated());
+      console.log("🔍 localStorage auth_token:", typeof window !== 'undefined' ? localStorage.getItem('auth_token') : 'SSR');
+      
       try {
         if (apiClient.isAuthenticated()) {
           // Try to get user type from token or localStorage
@@ -114,15 +118,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           const response = await apiClient.getProfile(userType);
           console.log("AuthContext - Profile response:", response);
+          console.log("AuthContext - Response keys:", Object.keys(response || {}));
+          console.log("AuthContext - response.data exists?", !!response?.data);
+          console.log("AuthContext - response.result exists?", !!response?.result);
           console.log("AuthContext - User type used:", userType);
           console.log("AuthContext - Endpoint called:", userType ? `/v1/${userType}/profile` : '/v1/me');
           
-          if (response.data) {
-            console.log("AuthContext - Profile data keys:", Object.keys(response.data));
-            console.log("AuthContext - Birth date from API:", response.data.birth_date);
+          // Handle both formats: response.data (old) OR response.result (Spring Boot backend)
+          const profileData = response.data || response.result || (response as any);
+          
+          if (profileData && typeof profileData === 'object' && 'email' in profileData) {
+            console.log("AuthContext - Profile data keys:", Object.keys(profileData));
+            console.log("AuthContext - Birth date from API:", profileData.birth_date);
             
             // Always try to enrich user data with token claims
-            let userData = response.data;
+            let userData = profileData;
             if (token) {
               const decoded = decodeJWT(token);
               console.log("AuthContext - Decoded token claims:", decoded);
@@ -146,20 +156,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             console.log("AuthContext - Final user data:", userData);
             setUser(userData);
+            console.log("✅ AuthContext - User SET successfully!");
             // Store user type for future use
             if (typeof window !== "undefined") {
               localStorage.setItem("user_type", userData.user_type);
             }
+          } else {
+            console.error("❌ AuthContext - Profile data not found in response!");
+            console.error("❌ response.data:", response?.data);
+            console.error("❌ response.result:", response?.result);
+            console.error("❌ Full response:", JSON.stringify(response, null, 2));
           }
+        } else {
+          console.log("🔍 AuthContext - apiClient NOT authenticated (no token)");
         }
       } catch (error) {
-        console.error("Failed to check authentication:", error);
+        console.error("❌ AuthContext - Failed to check authentication:", error);
+        console.error("❌ Error details:", JSON.stringify(error, null, 2));
         apiClient.clearToken();
         // Clear stored user type on error
         if (typeof window !== "undefined") {
           localStorage.removeItem("user_type");
         }
       } finally {
+        console.log("✅ AuthContext - checkAuth COMPLETE, isLoading set to false");
         setIsLoading(false);
       }
     };
@@ -174,13 +194,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log("AuthContext - Full response:", response);
       console.log("AuthContext - Response data:", response.data);
+      console.log("AuthContext - Response result:", response.result);
       console.log("AuthContext - Response keys:", Object.keys(response));
-      if (response.data) {
-        console.log("AuthContext - Data keys:", Object.keys(response.data));
-      }
 
-      // Handle both formats: response.data OR response.user
-      const userData = response.data || response.user;
+      // Handle multiple formats: response.data OR response.result (Spring Boot) OR response.user
+      const userData = response.data || response.result || response.user;
       if (userData) {
         setUser(userData);
         // Store user type in localStorage for future use
